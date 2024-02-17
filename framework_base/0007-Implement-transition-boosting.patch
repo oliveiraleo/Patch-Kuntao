@@ -1,0 +1,110 @@
+From 6586e8d28ec4ae1bacabd4c77c15c23651198ace Mon Sep 17 00:00:00 2001
+From: minaripenguin <minaripenguin@users.noreply.github.com>
+Date: Sun, 12 Nov 2023 08:40:17 +0800
+Subject: [PATCH] services: Implement transition boosting
+
+---
+ .../android/server/wm/AsyncRotationController.java  | 12 ++++++++++++
+ .../core/java/com/android/server/wm/Transition.java | 13 +++++++++++++
+ 2 files changed, 25 insertions(+)
+
+diff --git a/services/core/java/com/android/server/wm/AsyncRotationController.java b/services/core/java/com/android/server/wm/AsyncRotationController.java
+index 4b463c7e1756..b7240346e11b 100644
+--- a/services/core/java/com/android/server/wm/AsyncRotationController.java
++++ b/services/core/java/com/android/server/wm/AsyncRotationController.java
+@@ -22,7 +22,9 @@
+ import static com.android.server.wm.SurfaceAnimator.ANIMATION_TYPE_TOKEN_TRANSFORM;
+ 
+ import android.annotation.IntDef;
++import android.hardware.power.Mode;
+ import android.os.HandlerExecutor;
++import android.os.PowerManagerInternal;
+ import android.util.ArrayMap;
+ import android.util.Slog;
+ import android.view.SurfaceControl;
+@@ -32,6 +34,7 @@
+ import android.view.animation.AnimationUtils;
+ 
+ import com.android.internal.R;
++import com.android.server.LocalServices;
+ 
+ import java.io.PrintWriter;
+ import java.lang.annotation.Retention;
+@@ -338,6 +341,7 @@ boolean completeRotation(WindowToken token) {
+             finishOp(token);
+             if (mTargetWindowTokens.isEmpty()) {
+                 onAllCompleted();
++                setActivityBoost(false);
+                 return true;
+             }
+         }
+@@ -346,11 +350,19 @@ boolean completeRotation(WindowToken token) {
+         return false;
+     }
+ 
++    protected void setActivityBoost(boolean enable) {
++        PowerManagerInternal mPowerManagerInternal = LocalServices.getService(PowerManagerInternal.class);
++        if (mPowerManagerInternal != null) {
++            mPowerManagerInternal.setPowerMode(Mode.LAUNCH, enable);
++        }
++    }
++
+     /**
+      * Prepares the corresponding operations (e.g. hide animation) for the window tokens which may
+      * be seamlessly rotated later.
+      */
+     void start() {
++        setActivityBoost(true);
+         for (int i = mTargetWindowTokens.size() - 1; i >= 0; i--) {
+             final WindowToken windowToken = mTargetWindowTokens.keyAt(i);
+             final Operation op = mTargetWindowTokens.valueAt(i);
+diff --git a/services/core/java/com/android/server/wm/Transition.java b/services/core/java/com/android/server/wm/Transition.java
+index 085e65db9ca7..d35b1162cea0 100644
+--- a/services/core/java/com/android/server/wm/Transition.java
++++ b/services/core/java/com/android/server/wm/Transition.java
+@@ -74,11 +74,13 @@
+ import android.graphics.Point;
+ import android.graphics.Rect;
+ import android.hardware.HardwareBuffer;
++import android.hardware.power.Boost;
+ import android.os.Binder;
+ import android.os.Bundle;
+ import android.os.IBinder;
+ import android.os.IRemoteCallback;
+ import android.os.Looper;
++import android.os.PowerManagerInternal;
+ import android.os.RemoteException;
+ import android.os.SystemClock;
+ import android.os.Trace;
+@@ -100,6 +102,7 @@
+ import com.android.internal.protolog.common.ProtoLog;
+ import com.android.internal.util.function.pooled.PooledLambda;
+ import com.android.server.inputmethod.InputMethodManagerInternal;
++import com.android.server.LocalServices;
+ import com.android.server.statusbar.StatusBarManagerInternal;
+ 
+ import java.lang.annotation.Retention;
+@@ -604,6 +607,9 @@ void start() {
+             return;
+         }
+         mState = STATE_STARTED;
++        if (mType == TRANSIT_CHANGE) {
++            doActivityBoost();
++        }
+         ProtoLog.v(ProtoLogGroup.WM_DEBUG_WINDOW_TRANSITIONS, "Starting Transition %d",
+                 mSyncId);
+         applyReady();
+@@ -617,6 +623,13 @@ void start() {
+         SurfaceControl.mergeToGlobalTransaction(mTmpTransaction);
+     }
+ 
++    protected void doActivityBoost() {
++        PowerManagerInternal mPowerManagerInternal = LocalServices.getService(PowerManagerInternal.class);
++        if (mPowerManagerInternal != null) {
++            mPowerManagerInternal.setPowerBoost(Boost.DISPLAY_UPDATE_IMMINENT, 80);
++        }
++    }
++
+     /**
+      * Adds wc to set of WindowContainers participating in this transition.
+      */

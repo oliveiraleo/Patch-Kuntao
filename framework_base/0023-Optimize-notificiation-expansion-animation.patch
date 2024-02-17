@@ -1,0 +1,35 @@
+From a0d739d43e3fba0b0f900b1ba3518f630367d859 Mon Sep 17 00:00:00 2001
+From: minaripenguin <minaripenguin@users.noreply.github.com>
+Date: Wed, 31 Jan 2024 16:29:30 +0300
+Subject: [PATCH] SystemUI: Optimize notificiation expansion animation
+
+---
+ .../systemui/shade/NotificationPanelViewController.java   | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/packages/SystemUI/src/com/android/systemui/shade/NotificationPanelViewController.java b/packages/SystemUI/src/com/android/systemui/shade/NotificationPanelViewController.java
+index 87eeff2c3157..80104931c117 100644
+--- a/packages/SystemUI/src/com/android/systemui/shade/NotificationPanelViewController.java
++++ b/packages/SystemUI/src/com/android/systemui/shade/NotificationPanelViewController.java
+@@ -2627,6 +2627,10 @@ private void updateNotificationTranslucency() {
+         if (mIsOcclusionTransitionRunning) {
+             return;
+         }
++        if (mQsController.isExpandImmediate() && !mQsController.getFullyExpanded()) {
++            mNotificationStackScrollLayoutController.setAlpha(0f);
++            return;
++        }
+         float alpha = 1f;
+         if (mClosingWithAlphaFadeOut && !mExpandingFromHeadsUp
+                 && !mHeadsUpManager.hasPinnedHeadsUp()) {
+@@ -2637,9 +2641,7 @@ private void updateNotificationTranslucency() {
+                 && !mQsController.getFullyExpanded()) {
+             alpha *= mClockPositionResult.clockAlpha;
+         }
+-        if (mQsController.isExpandImmediate() && !mQsController.getFullyExpanded()) {
+-            alpha = 0f;
+-        }
++        alpha = (alpha < 0.88f) ? 0f : 1f;
+         mNotificationStackScrollLayoutController.setAlpha(alpha);
+     }
+ 

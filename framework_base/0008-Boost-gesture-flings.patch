@@ -1,0 +1,164 @@
+From 8048b048e3f5cd89f902e224bcd57d0955a74e06 Mon Sep 17 00:00:00 2001
+From: minaripenguin <minaripenguin@users.noreply.github.com>
+Date: Tue, 4 Jul 2023 06:49:24 +0800
+Subject: [PATCH] Services: Boost gesture flings
+
+* like code linaro's gesture fling boosts
+
+[hydrangea]: update for sdk34 taking advantage of new swiping overrides , toned down boosting durations
+
+Co-authored-by: hydrangea07 <104114625+hydrangea07@users.noreply.github.com>
+Change-Id: I20db157b640c2c546730b7534f86d4465e597bb7
+Signed-off-by: minaripenguin <minaripenguin@users.noreply.github.com>
+---
+ .../com/android/server/wm/DisplayPolicy.java  | 42 +++++++++++++++++++
+ .../SystemGesturesPointerEventListener.java   | 23 ++++++++++
+ 2 files changed, 65 insertions(+)
+
+diff --git a/services/core/java/com/android/server/wm/DisplayPolicy.java b/services/core/java/com/android/server/wm/DisplayPolicy.java
+index e899e5400463..706c795d0a32 100644
+--- a/services/core/java/com/android/server/wm/DisplayPolicy.java
++++ b/services/core/java/com/android/server/wm/DisplayPolicy.java
+@@ -454,6 +454,10 @@ private Insets getControllableInsets(WindowState win) {
+ 
+                 @Override
+                 public void onSwipeFromTop() {
++                    if (mService.mPowerManagerInternal != null) {
++                        mService.mPowerManagerInternal.setPowerBoost(
++                                Boost.INTERACTION, 80);
++                    }
+                     synchronized (mLock) {
+                         requestTransientBars(mTopGestureHost,
+                                 getControllableInsets(mTopGestureHost).top > 0);
+@@ -462,6 +466,10 @@ public void onSwipeFromTop() {
+ 
+                 @Override
+                 public void onSwipeFromBottom() {
++                    if (mService.mPowerManagerInternal != null) {
++                        mService.mPowerManagerInternal.setPowerBoost(
++                                Boost.INTERACTION, 80);
++                    }
+                     synchronized (mLock) {
+                         requestTransientBars(mBottomGestureHost,
+                                 getControllableInsets(mBottomGestureHost).bottom > 0);
+@@ -475,6 +483,10 @@ private boolean allowsSideSwipe(Region excludedRegion) {
+ 
+                 @Override
+                 public void onSwipeFromRight() {
++                    if (mService.mPowerManagerInternal != null) {
++                        mService.mPowerManagerInternal.setPowerBoost(
++                                Boost.INTERACTION, 80);
++                    }
+                     final Region excludedRegion = Region.obtain();
+                     synchronized (mLock) {
+                         mDisplayContent.calculateSystemGestureExclusion(
+@@ -490,6 +502,10 @@ public void onSwipeFromRight() {
+ 
+                 @Override
+                 public void onSwipeFromLeft() {
++                    if (mService.mPowerManagerInternal != null) {
++                        mService.mPowerManagerInternal.setPowerBoost(
++                                Boost.INTERACTION, 80);
++                    }
+                     final Region excludedRegion = Region.obtain();
+                     synchronized (mLock) {
+                         mDisplayContent.calculateSystemGestureExclusion(
+@@ -511,6 +527,32 @@ public void onFling(int duration) {
+                     }
+                 }
+ 
++                @Override
++                public void onVerticalFling(int duration) {
++                    if (mService.mPowerManagerInternal != null) {
++                        mService.mPowerManagerInternal.setPowerBoost(
++                                Boost.INTERACTION, duration + 80);
++                    }
++                }
++
++                @Override
++                public void onHorizontalFling(int duration) {
++                    if (mService.mPowerManagerInternal != null) {
++                        mService.mPowerManagerInternal.setPowerBoost(
++                               Boost.INTERACTION, duration + 80);
++                    }
++                }
++
++                @Override
++                public void onScroll(boolean started) {
++                    if (started) {
++                       if (mService.mPowerManagerInternal != null) {
++                           mService.mPowerManagerInternal.setPowerBoost(
++                                  Boost.DISPLAY_UPDATE_IMMINENT, 80);
++                       }
++                    }
++                }
++
+                 @Override
+                 public void onDebug() {
+                     // no-op
+diff --git a/services/core/java/com/android/server/wm/SystemGesturesPointerEventListener.java b/services/core/java/com/android/server/wm/SystemGesturesPointerEventListener.java
+index 100735784fb1..413e94de6055 100644
+--- a/services/core/java/com/android/server/wm/SystemGesturesPointerEventListener.java
++++ b/services/core/java/com/android/server/wm/SystemGesturesPointerEventListener.java
+@@ -91,6 +91,7 @@ class SystemGesturesPointerEventListener implements PointerEventListener {
+     private boolean mMouseHoveringAtRight;
+     private boolean mMouseHoveringAtBottom;
+     private long mLastFlingTime;
++    private boolean mScrollFired;
+ 
+     SystemGesturesPointerEventListener(Context context, Handler handler, Callbacks callbacks) {
+         mContext = checkNull("context", context);
+@@ -183,6 +184,7 @@ public void onPointerEvent(MotionEvent event) {
+             case MotionEvent.ACTION_DOWN:
+                 mSwipeFireable = true;
+                 mDebugFireable = true;
++                mScrollFired = false;
+                 mDownPointers = 0;
+                 captureDown(event, 0);
+                 if (mMouseHoveringAtLeft) {
+@@ -289,6 +291,9 @@ public void onPointerEvent(MotionEvent event) {
+             case MotionEvent.ACTION_CANCEL:
+                 mSwipeFireable = false;
+                 mDebugFireable = false;
++                if (mScrollFired)
++                    mCallbacks.onScroll(false);
++                mScrollFired = false;
+                 mCallbacks.onUpOrCancel();
+                 break;
+             default:
+@@ -445,10 +450,25 @@ public boolean onFling(MotionEvent down, MotionEvent up,
+             if (duration > MAX_FLING_TIME_MILLIS) {
+                 duration = MAX_FLING_TIME_MILLIS;
+             }
++            if(Math.abs(velocityY) >= Math.abs(velocityX))
++                mCallbacks.onVerticalFling(duration);
++            else
++                mCallbacks.onHorizontalFling(duration);
++
+             mLastFlingTime = now;
+             mCallbacks.onFling(duration);
+             return true;
+         }
++
++        @Override
++        public boolean onScroll(MotionEvent e1, MotionEvent e2,
++                                   float distanceX, float distanceY) {
++           if (!mScrollFired) {
++               mCallbacks.onScroll(true);
++               mScrollFired = true;
++           }
++           return true;
++        }
+     }
+ 
+     interface Callbacks {
+@@ -457,6 +477,9 @@ interface Callbacks {
+         void onSwipeFromRight();
+         void onSwipeFromLeft();
+         void onFling(int durationMs);
++        void onVerticalFling(int durationMs);
++        void onHorizontalFling(int durationMs);
++        void onScroll(boolean started);
+         void onDown();
+         void onUpOrCancel();
+         void onMouseHoverAtLeft();

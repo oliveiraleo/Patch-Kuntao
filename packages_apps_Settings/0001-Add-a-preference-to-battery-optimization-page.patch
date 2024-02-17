@@ -1,0 +1,27 @@
+From 3c86f1061afbd6bbd7d86e9f38241f657bfac729 Mon Sep 17 00:00:00 2001
+From: Murat Kozan <muratkozan350@gmail.com>
+Date: Thu, 8 Feb 2024 07:28:25 +0300
+Subject: [PATCH] Settings: Add a preference to battery optimization page
+
+* rather than going to apps one by one, this preference allows users to open the page where it'll list all apps with filters and stuff.
+---
+ res/xml/power_usage_summary.xml | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/res/xml/power_usage_summary.xml b/res/xml/power_usage_summary.xml
+index b791f128598..962984651f6 100644
+--- a/res/xml/power_usage_summary.xml
++++ b/res/xml/power_usage_summary.xml
+@@ -51,6 +51,12 @@
+         settings:keywords="@string/keywords_battery_saver"
+         settings:controller="com.android.settings.fuelgauge.BatterySaverController" />
+ 
++    <Preference
++        android:key="high_power_apps"
++        android:title="@string/high_power_apps">
++        <intent android:action="android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS" />
++    </Preference>
++
+     <!-- Charging control -->
+     <lineageos.preference.LineagePartsPreference
+         android:key="charging_control"

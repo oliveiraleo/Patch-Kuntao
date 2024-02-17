@@ -1,0 +1,31 @@
+From b62b6f3e5d45541c17aa66a4b131f02f8d69cc4f Mon Sep 17 00:00:00 2001
+From: html6405 <peter.schelchshorn@mhs-solutions.at>
+Date: Fri, 16 Sep 2022 16:12:36 +0200
+Subject: [PATCH] Revert "Enable parsing netlink events from kernel since T."
+
+This reverts commit d3b725085529b459990e41392a32848b557c5183.
+---
+ src/android/net/ip/IpClientLinkObserver.java | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/src/android/net/ip/IpClientLinkObserver.java b/src/android/net/ip/IpClientLinkObserver.java
+index 25978ab7..979c252f 100644
+--- a/src/android/net/ip/IpClientLinkObserver.java
++++ b/src/android/net/ip/IpClientLinkObserver.java
+@@ -20,7 +20,6 @@
+ import static android.system.OsConstants.AF_UNSPEC;
+ import static android.system.OsConstants.IFF_LOOPBACK;
+ 
+-import static com.android.modules.utils.build.SdkLevel.isAtLeastT;
+ import static com.android.net.module.util.NetworkStackConstants.ICMPV6_ROUTER_ADVERTISEMENT;
+ import static com.android.net.module.util.netlink.NetlinkConstants.IFF_LOWER_UP;
+ import static com.android.net.module.util.netlink.NetlinkConstants.RTM_F_CLONED;
+@@ -226,7 +225,7 @@ private void maybeLog(String operation, Object o) {
+ 
+     private boolean isNetlinkEventParsingEnabled() {
+         return mDependencies.isFeatureEnabled(mContext, IPCLIENT_PARSE_NETLINK_EVENTS_VERSION,
+-                isAtLeastT() /* default value */);
++                false /* default value */);
+     }
+ 
+     private int getSocketReceiveBufferSize() {

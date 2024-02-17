@@ -1,0 +1,85 @@
+From af491e8f4223f95c833cb3e0cec904c62642f96e Mon Sep 17 00:00:00 2001
+From: minaripenguin <minaripenguin@users.noreply.github.com>
+Date: Tue, 4 Jul 2023 08:26:22 +0800
+Subject: [PATCH] SystemUI: QS fling animation boost
+
+Change-Id: Ieff691c59ffcf7c79fe545ccf407271d54bdf266
+Signed-off-by: minaripenguin <minaripenguin@users.noreply.github.com>
+---
+ packages/SystemUI/Android.bp                              | 4 ++++
+ .../systemui/shade/NotificationPanelViewController.java   | 8 ++++++++
+ 2 files changed, 12 insertions(+)
+
+diff --git a/packages/SystemUI/Android.bp b/packages/SystemUI/Android.bp
+index 8ecb4e91c30d..28e354ccddd8 100644
+--- a/packages/SystemUI/Android.bp
++++ b/packages/SystemUI/Android.bp
+@@ -186,6 +186,8 @@ android_library {
+         "androidx.dynamicanimation_dynamicanimation",
+         "androidx-constraintlayout_constraintlayout",
+         "androidx.exifinterface_exifinterface",
++        "android.hardware.power.stats-V1-java",
++        "android.hardware.power-V3-java",
+         "com.google.android.material_material",
+         "kotlinx_coroutines_android",
+         "kotlinx_coroutines",
+@@ -368,6 +370,8 @@ android_library {
+         "androidx.dynamicanimation_dynamicanimation",
+         "androidx-constraintlayout_constraintlayout",
+         "androidx.exifinterface_exifinterface",
++        "android.hardware.power.stats-V1-java",
++        "android.hardware.power-V3-java",
+         "kotlinx-coroutines-android",
+         "kotlinx-coroutines-core",
+         "kotlinx_coroutines_test",
+diff --git a/packages/SystemUI/src/com/android/systemui/shade/NotificationPanelViewController.java b/packages/SystemUI/src/com/android/systemui/shade/NotificationPanelViewController.java
+index 053fdc399e37..8c86ca3ad94c 100644
+--- a/packages/SystemUI/src/com/android/systemui/shade/NotificationPanelViewController.java
++++ b/packages/SystemUI/src/com/android/systemui/shade/NotificationPanelViewController.java
+@@ -61,10 +61,12 @@
+ import android.graphics.Insets;
+ import android.graphics.Rect;
+ import android.graphics.Region;
++import android.hardware.power.Boost;
+ import android.os.Bundle;
+ import android.os.Handler;
+ import android.os.PowerManager;
+ import android.os.Process;
++import android.os.PowerManagerInternal;
+ import android.os.Trace;
+ import android.os.UserManager;
+ import android.os.VibrationEffect;
+@@ -112,6 +114,7 @@
+ import com.android.keyguard.dagger.KeyguardStatusBarViewComponent;
+ import com.android.keyguard.dagger.KeyguardStatusViewComponent;
+ import com.android.keyguard.dagger.KeyguardUserSwitcherComponent;
++import com.android.server.LocalServices;
+ import com.android.systemui.DejankUtils;
+ import com.android.systemui.Dependency;
+ import com.android.systemui.Dumpable;
+@@ -630,6 +633,7 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
+     private int mLockscreenToDreamingTransitionTranslationY;
+     private int mGoneToDreamingTransitionTranslationY;
+     private int mLockscreenToOccludedTransitionTranslationY;
++    private final PowerManagerInternal mLocalPowerManager;
+ 
+     private boolean mIsA11Style;
+ 
+@@ -1004,6 +1008,7 @@ public void onUnlockAnimationStarted(
+         mAlternateBouncerInteractor = alternateBouncerInteractor;
+         mKeyguardRootView = keyguardRootView;
+         dumpManager.registerDumpable(this);
++        mLocalPowerManager = LocalServices.getService(PowerManagerInternal.class);
+     }
+ 
+     private void unlockAnimationFinished() {
+@@ -2120,6 +2125,9 @@ public void onAnimationEnd(Animator animation) {
+                 }
+             });
+         }
++        if (mLocalPowerManager != null) {
++            mLocalPowerManager.setPowerBoost(Boost.DISPLAY_UPDATE_IMMINENT, 200);
++        }
+         animator.addListener(new AnimatorListenerAdapter() {
+             private boolean mCancelled;
+ 

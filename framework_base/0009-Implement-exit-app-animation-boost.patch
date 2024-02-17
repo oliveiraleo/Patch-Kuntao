@@ -1,0 +1,62 @@
+From 1da4aca8dcce45aca976708de4b8bbc197f0cede Mon Sep 17 00:00:00 2001
+From: minaripenguin <minaripenguin@users.noreply.github.com>
+Date: Wed, 27 Dec 2023 11:36:22 +0800
+Subject: [PATCH] services: Implement exit app animation boost
+
+original change by: mnri
+
+committer: rmp
+
+pre-approved by: mnri
+
+Signed-off-by: minaripenguin <minaripenguin@users.noreply.github.com>
+---
+ .../java/com/android/server/wm/TaskFragment.java    | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/services/core/java/com/android/server/wm/TaskFragment.java b/services/core/java/com/android/server/wm/TaskFragment.java
+index f9215850ff6f..668228e6375c 100644
+--- a/services/core/java/com/android/server/wm/TaskFragment.java
++++ b/services/core/java/com/android/server/wm/TaskFragment.java
+@@ -86,7 +86,9 @@
+ import android.graphics.Point;
+ import android.graphics.Rect;
+ import android.hardware.HardwareBuffer;
++import android.hardware.power.Boost;
+ import android.os.IBinder;
++import android.os.PowerManagerInternal;
+ import android.os.RemoteException;
+ import android.os.UserHandle;
+ import android.util.BoostFramework;
+@@ -106,6 +108,7 @@
+ import com.android.internal.app.ActivityTrigger;
+ import com.android.internal.protolog.common.ProtoLog;
+ import com.android.server.am.HostingRecord;
++import com.android.server.LocalServices;
+ import com.android.server.pm.pkg.AndroidPackage;
+ 
+ import java.io.FileDescriptor;
+@@ -1408,6 +1411,9 @@ final boolean resumeTopActivity(ActivityRecord prev, ActivityOptions options,
+                 dc.prepareAppTransition(TRANSIT_NONE);
+             } else {
+                 dc.prepareAppTransition(TRANSIT_OPEN);
++                if (next != null) {
++                    doActivityBoost();
++                }
+             }
+         }
+ 
+@@ -1580,6 +1586,13 @@ final boolean resumeTopActivity(ActivityRecord prev, ActivityOptions options,
+         return true;
+     }
+ 
++    protected void doActivityBoost() {
++        PowerManagerInternal mPowerManagerInternal = LocalServices.getService(PowerManagerInternal.class);
++        if (mPowerManagerInternal != null) {
++            mPowerManagerInternal.setPowerBoost(Boost.DISPLAY_UPDATE_IMMINENT, 80);
++        }
++    }
++
+     boolean shouldSleepOrShutDownActivities() {
+         return shouldSleepActivities() || mAtmService.mShuttingDown;
+     }

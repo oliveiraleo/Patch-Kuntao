@@ -1,0 +1,47 @@
+From 83d7a94f7da25591a7f2c5e83001a1dfcfdae837 Mon Sep 17 00:00:00 2001
+From: Danny Baumann <dannybaumann@web.de>
+Date: Wed, 29 Aug 2018 11:21:52 +0200
+Subject: [PATCH] Implement per-process target SDK version override.
+
+Change-Id: I65bbdbe96541d8aacdd4de125cdb9c1435129413
+---
+ linker/Android.bp |  1 +
+ linker/linker.cpp | 13 ++++++++++++-
+ 2 files changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/linker/Android.bp b/linker/Android.bp
+index 1977675103..facca687e2 100644
+--- a/linker/Android.bp
++++ b/linker/Android.bp
+@@ -75,6 +75,7 @@ cc_defaults {
+     name: "linker_defaults",
+     defaults: [
+         "shim_libs_defaults",
++        "process_sdk_version_overrides_defaults",
+     ],
+     arch: {
+         arm: {
+diff --git a/linker/linker.cpp b/linker/linker.cpp
+index 2e53423a2d..6d63f3c447 100644
+--- a/linker/linker.cpp
++++ b/linker/linker.cpp
+@@ -3676,7 +3676,18 @@ std::vector<android_namespace_t*> init_default_namespaces(const char* executable
+     }
+   }
+ 
+-  set_application_target_sdk_version(config->target_sdk_version());
++  uint32_t target_sdk = config->target_sdk_version();
++#ifdef SDK_VERSION_OVERRIDES
++  for (const auto& entry : android::base::Split(SDK_VERSION_OVERRIDES, " ")) {
++    auto splitted = android::base::Split(entry, "=");
++    if (splitted.size() == 2 && splitted[0] == executable_path) {
++      target_sdk = static_cast<uint32_t>(std::stoul(splitted[1]));
++      break;
++    }
++  }
++  DEBUG("Target SDK for %s = %d", executable_path, target_sdk);
++#endif
++  set_application_target_sdk_version(target_sdk);
+ 
+   std::vector<android_namespace_t*> created_namespaces;
+   created_namespaces.reserve(namespaces.size());
