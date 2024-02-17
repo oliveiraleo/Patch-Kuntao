@@ -1,0 +1,98 @@
+From efc5f5cc069d54893ac590089041dd8ff5e5bedd Mon Sep 17 00:00:00 2001
+From: Astridxx <muratkozan350@gmail.com>
+Date: Fri, 11 Aug 2023 11:13:53 +0300
+Subject: [PATCH] touch response optimizations
+
+---
+ include/input/InputTransport.h |  9 +++++++--
+ libs/input/InputTransport.cpp  | 19 +++++++++++++++----
+ 2 files changed, 22 insertions(+), 6 deletions(-)
+
+diff --git a/include/input/InputTransport.h b/include/input/InputTransport.h
+index a790b5637f6..c0f8aa0a284 100644
+--- a/include/input/InputTransport.h
++++ b/include/input/InputTransport.h
+@@ -464,7 +464,8 @@ class InputConsumer {
+      * Other errors probably indicate that the channel is broken.
+      */
+     status_t consume(InputEventFactoryInterface* factory, bool consumeBatches, nsecs_t frameTime,
+-                     uint32_t* outSeq, InputEvent** outEvent);
++                     uint32_t* outSeq, InputEvent** outEvent,
++                     int* motionEventType, int* touchMoveNumber, bool* flag);
+ 
+     /* Sends a finished signal to the publisher to inform it that the message
+      * with the specified sequence number has finished being process and whether
+@@ -514,6 +515,8 @@ class InputConsumer {
+     std::string dump() const;
+ 
+ private:
++    int mTouchMoveCounter = 0;
++
+     // True if touch resampling is enabled.
+     const bool mResampleTouch;
+ 
+@@ -637,7 +640,9 @@ class InputConsumer {
+     std::unordered_map<uint32_t /*seq*/, nsecs_t /*consumeTime*/> mConsumeTimes;
+ 
+     status_t consumeBatch(InputEventFactoryInterface* factory,
+-            nsecs_t frameTime, uint32_t* outSeq, InputEvent** outEvent);
++            nsecs_t frameTime, uint32_t* outSeq, InputEvent** outEvent,
++            int* touchMoveNumber);
++
+     status_t consumeSamples(InputEventFactoryInterface* factory,
+             Batch& batch, size_t count, uint32_t* outSeq, InputEvent** outEvent);
+ 
+diff --git a/libs/input/InputTransport.cpp b/libs/input/InputTransport.cpp
+index ea8b9a7ec8e..b25f578dc8d 100644
+--- a/libs/input/InputTransport.cpp
++++ b/libs/input/InputTransport.cpp
+@@ -708,7 +708,8 @@ bool InputConsumer::isTouchResamplingEnabled() {
+ }
+ 
+ status_t InputConsumer::consume(InputEventFactoryInterface* factory, bool consumeBatches,
+-                                nsecs_t frameTime, uint32_t* outSeq, InputEvent** outEvent) {
++                                nsecs_t frameTime, uint32_t* outSeq, InputEvent** outEvent,
++                                int* motionEventType, int* touchMoveNumber, bool* flag) {
+     if (DEBUG_TRANSPORT_ACTIONS) {
+         ALOGD("channel '%s' consumer ~ consume: consumeBatches=%s, frameTime=%" PRId64,
+               mChannel->getName().c_str(), toString(consumeBatches), frameTime);
+@@ -730,10 +731,20 @@ status_t InputConsumer::consume(InputEventFactoryInterface* factory, bool consum
+             if (result == OK) {
+                 mConsumeTimes.emplace(mMsg.header.seq, systemTime(SYSTEM_TIME_MONOTONIC));
+             }
++            if (result == 0) {
++                if ((mMsg.body.motion.action & AMOTION_EVENT_ACTION_MASK) == AMOTION_EVENT_ACTION_MOVE){
++                    mTouchMoveCounter++;
++                } else {
++                    mTouchMoveCounter = 0;
++                }
++                *flag = true;
++            }
++            *motionEventType = mMsg.body.motion.action & AMOTION_EVENT_ACTION_MASK;
++            *touchMoveNumber = mTouchMoveCounter;
+             if (result) {
+                 // Consume the next batched event unless batches are being held for later.
+                 if (consumeBatches || result != WOULD_BLOCK) {
+-                    result = consumeBatch(factory, frameTime, outSeq, outEvent);
++                    result = consumeBatch(factory, frameTime, outSeq, outEvent, touchMoveNumber);
+                     if (*outEvent) {
+                         if (DEBUG_TRANSPORT_ACTIONS) {
+                             ALOGD("channel '%s' consumer ~ consumed batch event, seq=%u",
+@@ -872,7 +883,7 @@ status_t InputConsumer::consume(InputEventFactoryInterface* factory, bool consum
+ }
+ 
+ status_t InputConsumer::consumeBatch(InputEventFactoryInterface* factory,
+-        nsecs_t frameTime, uint32_t* outSeq, InputEvent** outEvent) {
++        nsecs_t frameTime, uint32_t* outSeq, InputEvent** outEvent, int* touchMoveNumber) {
+     status_t result;
+     for (size_t i = mBatches.size(); i > 0; ) {
+         i--;
+@@ -884,7 +895,7 @@ status_t InputConsumer::consumeBatch(InputEventFactoryInterface* factory,
+         }
+ 
+         nsecs_t sampleTime = frameTime;
+-        if (mResampleTouch) {
++        if (mResampleTouch && (*touchMoveNumber != 1)) {
+             sampleTime -= RESAMPLE_LATENCY;
+         }
+         ssize_t split = findSampleNoLaterThan(batch, sampleTime);

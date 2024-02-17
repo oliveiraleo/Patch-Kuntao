@@ -1,0 +1,23 @@
+From e0c03d5815fe75418d6e2db024d6cdf2f31a26d0 Mon Sep 17 00:00:00 2001
+From: AdrianDC <radian.dc@gmail.com>
+Date: Sat, 12 Aug 2023 11:48:09 +0300
+Subject: [PATCH] Add missing INTERACT_ACROSS_USERS_FULL permission
+
+---
+ packages/SettingsProvider/AndroidManifest.xml | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/packages/SettingsProvider/AndroidManifest.xml b/packages/SettingsProvider/AndroidManifest.xml
+index 04d3f94863547..c678813c1d682 100644
+--- a/packages/SettingsProvider/AndroidManifest.xml
++++ b/packages/SettingsProvider/AndroidManifest.xml
+@@ -3,6 +3,9 @@
+         coreApp="true"
+         android:sharedUserId="android.uid.system">
+ 
++    <!-- ActivityManager -->
++    <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS_FULL" />
++
+     <application android:allowClearUserData="false"
+                  android:label="@string/app_label"
+                  android:process="system"

@@ -1,0 +1,169 @@
+From 5862b6db4e1e462a084cea1c50a40828c8c645df Mon Sep 17 00:00:00 2001
+From: SagarMakhar <sagarmakhar@gmail.com>
+Date: Thu, 15 Feb 2024 18:54:36 +0300
+Subject: [PATCH] BiometricScheduler: Cancel operation if not idle
+
+---
+ core/res/res/values/fp_config.xml             | 20 +++++++++++++++++++
+ core/res/res/values/fp_symbols.xml            | 20 +++++++++++++++++++
+ .../sensors/BiometricScheduler.java           | 19 +++++++++++++++---
+ .../biometrics/sensors/face/hidl/Face10.java  |  2 +-
+ .../fingerprint/hidl/Fingerprint21.java       |  2 +-
+ .../hidl/Fingerprint21UdfpsMock.java          |  6 +++---
+ 6 files changed, 61 insertions(+), 8 deletions(-)
+ create mode 100644 core/res/res/values/fp_config.xml
+ create mode 100644 core/res/res/values/fp_symbols.xml
+
+diff --git a/core/res/res/values/fp_config.xml b/core/res/res/values/fp_config.xml
+new file mode 100644
+index 0000000000000..1d25094c22e6a
+--- /dev/null
++++ b/core/res/res/values/fp_config.xml
+@@ -0,0 +1,20 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!--
++     Copyright (C) 2016-2022 LineageOS Android Project
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++<resources>
++    <!-- Whether to cancel fingerprint operation if not idle -->
++    <bool name="config_fpCancelIfNotIdle">true</bool>
++</resources>
+diff --git a/core/res/res/values/fp_symbols.xml b/core/res/res/values/fp_symbols.xml
+new file mode 100644
+index 0000000000000..0748acd320b3d
+--- /dev/null
++++ b/core/res/res/values/fp_symbols.xml
+@@ -0,0 +1,20 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!--
++     Copyright (C) 2016-2022 LineageOS Android Project
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++<resources>
++    <!-- Whether to cancel fingerprint operation if not idle -->
++    <java-symbol type="bool" name="config_fpCancelIfNotIdle" />
++</resources>
+diff --git a/services/core/java/com/android/server/biometrics/sensors/BiometricScheduler.java b/services/core/java/com/android/server/biometrics/sensors/BiometricScheduler.java
+index 39c5944d65c73..3bed7e74f4932 100644
+--- a/services/core/java/com/android/server/biometrics/sensors/BiometricScheduler.java
++++ b/services/core/java/com/android/server/biometrics/sensors/BiometricScheduler.java
+@@ -59,6 +59,9 @@
+ public class BiometricScheduler {
+ 
+     private static final String BASE_TAG = "BiometricScheduler";
++
++    private boolean mCancel;
++
+     // Number of recent operations to keep in our logs for dumpsys
+     protected static final int LOG_NUM_RECENT_OPERATIONS = 50;
+ 
+@@ -237,13 +240,16 @@ public void onClientFinished(@NonNull BaseClientMonitor clientMonitor, boolean s
+      * @param gestureAvailabilityDispatcher may be null if the sensor does not support gestures
+      *                                      (such as fingerprint swipe).
+      */
+-    public BiometricScheduler(@NonNull String tag,
++    public BiometricScheduler(Context context, @NonNull String tag,
+             @SensorType int sensorType,
+             @Nullable GestureAvailabilityDispatcher gestureAvailabilityDispatcher) {
+         this(tag, new Handler(Looper.getMainLooper()), sensorType, gestureAvailabilityDispatcher,
+                 IBiometricService.Stub.asInterface(
+                         ServiceManager.getService(Context.BIOMETRIC_SERVICE)),
+                 LOG_NUM_RECENT_OPERATIONS, CoexCoordinator.getInstance());
++
++        mCancel = context.getResources().getBoolean(
++                com.android.internal.R.bool.config_fpCancelIfNotIdle);
+     }
+ 
+     @VisibleForTesting
+@@ -257,8 +263,15 @@ protected String getTag() {
+ 
+     protected void startNextOperationIfIdle() {
+         if (mCurrentOperation != null) {
+-            Slog.v(getTag(), "Not idle, current operation: " + mCurrentOperation);
+-            return;
++            if (mCancel) {
++                if (!mCurrentOperation.isFinished()) {
++                    Slog.v(getTag(), "Not idle, cancelling current operation: " + mCurrentOperation);
++                    mCurrentOperation.cancel(mHandler, mInternalCallback);
++                }
++            } else {
++                Slog.v(getTag(), "Not idle, current operation: " + mCurrentOperation);
++                return;
++            }
+         }
+         if (mPendingOperations.isEmpty()) {
+             Slog.d(getTag(), "No operations, returning to idle");
+diff --git a/services/core/java/com/android/server/biometrics/sensors/face/hidl/Face10.java b/services/core/java/com/android/server/biometrics/sensors/face/hidl/Face10.java
+index e957794372aac..90e5daa8c30bc 100644
+--- a/services/core/java/com/android/server/biometrics/sensors/face/hidl/Face10.java
++++ b/services/core/java/com/android/server/biometrics/sensors/face/hidl/Face10.java
+@@ -363,7 +363,7 @@ public static Face10 newInstance(@NonNull Context context,
+             @NonNull LockoutResetDispatcher lockoutResetDispatcher) {
+         final Handler handler = new Handler(Looper.getMainLooper());
+         return new Face10(context, sensorProps, lockoutResetDispatcher, handler,
+-                new BiometricScheduler(TAG, BiometricScheduler.SENSOR_TYPE_FACE,
++                new BiometricScheduler(context, TAG, BiometricScheduler.SENSOR_TYPE_FACE,
+                         null /* gestureAvailabilityTracker */));
+     }
+ 
+diff --git a/services/core/java/com/android/server/biometrics/sensors/fingerprint/hidl/Fingerprint21.java b/services/core/java/com/android/server/biometrics/sensors/fingerprint/hidl/Fingerprint21.java
+index 94fd8f80f9f80..28d130bafab9d 100644
+--- a/services/core/java/com/android/server/biometrics/sensors/fingerprint/hidl/Fingerprint21.java
++++ b/services/core/java/com/android/server/biometrics/sensors/fingerprint/hidl/Fingerprint21.java
+@@ -365,7 +365,7 @@ public static Fingerprint21 newInstance(@NonNull Context context,
+             @NonNull LockoutResetDispatcher lockoutResetDispatcher,
+             @NonNull GestureAvailabilityDispatcher gestureAvailabilityDispatcher) {
+         final BiometricScheduler scheduler =
+-                new BiometricScheduler(TAG,
++                new BiometricScheduler(context, TAG,
+                         BiometricScheduler.sensorTypeFromFingerprintProperties(sensorProps),
+                         gestureAvailabilityDispatcher);
+         final HalResultController controller = new HalResultController(sensorProps.sensorId,
+diff --git a/services/core/java/com/android/server/biometrics/sensors/fingerprint/hidl/Fingerprint21UdfpsMock.java b/services/core/java/com/android/server/biometrics/sensors/fingerprint/hidl/Fingerprint21UdfpsMock.java
+index 273f8a545db55..9710581f70dab 100644
+--- a/services/core/java/com/android/server/biometrics/sensors/fingerprint/hidl/Fingerprint21UdfpsMock.java
++++ b/services/core/java/com/android/server/biometrics/sensors/fingerprint/hidl/Fingerprint21UdfpsMock.java
+@@ -136,9 +136,9 @@ public class Fingerprint21UdfpsMock extends Fingerprint21 implements TrustManage
+     private static class TestableBiometricScheduler extends BiometricScheduler {
+         @NonNull private Fingerprint21UdfpsMock mFingerprint21;
+ 
+-        TestableBiometricScheduler(@NonNull String tag, @NonNull Handler handler,
++        TestableBiometricScheduler(Context context, @NonNull String tag, @NonNull Handler handler,
+                 @Nullable GestureAvailabilityDispatcher gestureAvailabilityDispatcher) {
+-            super(tag, BiometricScheduler.SENSOR_TYPE_FP_OTHER, gestureAvailabilityDispatcher);
++            super(context, tag, BiometricScheduler.SENSOR_TYPE_FP_OTHER, gestureAvailabilityDispatcher);
+         }
+ 
+         void init(@NonNull Fingerprint21UdfpsMock fingerprint21) {
+@@ -252,7 +252,7 @@ public static Fingerprint21UdfpsMock newInstance(@NonNull Context context,
+ 
+         final Handler handler = new Handler(Looper.getMainLooper());
+         final TestableBiometricScheduler scheduler =
+-                new TestableBiometricScheduler(TAG, handler, gestureAvailabilityDispatcher);
++                new TestableBiometricScheduler(context, TAG, handler, gestureAvailabilityDispatcher);
+         final MockHalResultController controller =
+                 new MockHalResultController(sensorProps.sensorId, context, handler, scheduler);
+         return new Fingerprint21UdfpsMock(context, fingerprintStateCallback, sensorProps, scheduler,

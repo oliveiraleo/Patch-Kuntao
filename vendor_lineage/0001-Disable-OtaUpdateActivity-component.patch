@@ -1,0 +1,26 @@
+From 79e7bd862db10d8b14df916b5b4216e2ed57b551 Mon Sep 17 00:00:00 2001
+From: Alexander Koskovich <akoskovich@pm.me>
+Date: Fri, 29 Dec 2023 01:41:58 -0500
+Subject: [PATCH] lineage: overlay: Disable OtaUpdateActivity component
+
+If a device overrides BUILD_FINGERPRINT with one from stock
+the user will be not be able to proceed through SetupWizard
+if there is an update available for that device.
+
+Change-Id: I72d59bb30df52048bd099f20bcda4ac64822cc30
+(cherry picked from commit 590d01605f2dafce49df2cc0fc528e55eb61f1a8)
+---
+ overlay/common/lineage-sdk/lineage/res/res/values/config.xml | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/overlay/common/lineage-sdk/lineage/res/res/values/config.xml b/overlay/common/lineage-sdk/lineage/res/res/values/config.xml
+index c34c6ecdc6..12509caaf9 100644
+--- a/overlay/common/lineage-sdk/lineage/res/res/values/config.xml
++++ b/overlay/common/lineage-sdk/lineage/res/res/values/config.xml
+@@ -27,5 +27,6 @@
+         <item>com.google.android.gms/com.google.android.gms.update.SystemUpdateActivity</item>
+         <item>com.google.android.gms/com.google.android.gms.update.SystemUpdateGcmTaskService</item>
+         <item>com.google.android.gms/com.google.android.gms.update.SystemUpdateService</item>
++        <item>com.google.android.setupwizard/com.google.android.setupwizard.update.OtaUpdateActivity</item>
+     </string-array>
+ </resources>

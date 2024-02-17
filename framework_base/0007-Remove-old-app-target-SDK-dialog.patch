@@ -1,0 +1,26 @@
+From 97119f3d1678d6f6a0cb76be03ade32a81eefeac Mon Sep 17 00:00:00 2001
+From: Murat Kozan <muratkozan350@gmail.com>
+Date: Wed, 19 Apr 2023 10:45:37 +0300
+Subject: [PATCH] core: Remove old app target SDK dialog
+
+If an app is old, users should already know that, and there's usually no
+point in warning them about it because they would already be using a
+newer version if one existed. Sometimes, using an old app is necessary
+for one reason or another, so remove this annoyance and let the user use
+their old app in peace.
+---
+ services/core/java/com/android/server/wm/AppWarnings.java | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/services/core/java/com/android/server/wm/AppWarnings.java b/services/core/java/com/android/server/wm/AppWarnings.java
+index 994f07959f3b4..6749ae78c09c3 100644
+--- a/services/core/java/com/android/server/wm/AppWarnings.java
++++ b/services/core/java/com/android/server/wm/AppWarnings.java
+@@ -168,7 +168,6 @@ public void showDeprecatedTargetDialogIfNeeded(ActivityRecord r) {
+     public void onStartActivity(ActivityRecord r) {
+         showUnsupportedCompileSdkDialogIfNeeded(r);
+         showUnsupportedDisplaySizeDialogIfNeeded(r);
+-        showDeprecatedTargetDialogIfNeeded(r);
+     }
+ 
+     /**

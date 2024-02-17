@@ -1,0 +1,21 @@
+From 5c4e18ae0910d567a50a85f8a33b7b063a50c054 Mon Sep 17 00:00:00 2001
+From: Murat Kozan <muratkozan350@gmail.com>
+Date: Fri, 24 Feb 2023 22:13:07 +0300
+Subject: [PATCH] privapp-permissions: Grant missing TelephonyProvider perm.
+
+---
+ data/etc/privapp-permissions-platform.xml | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/data/etc/privapp-permissions-platform.xml b/data/etc/privapp-permissions-platform.xml
+index 813b7995fe89d..bc00263ef5ac1 100644
+--- a/data/etc/privapp-permissions-platform.xml
++++ b/data/etc/privapp-permissions-platform.xml
+@@ -262,6 +262,7 @@ applications that come with the platform
+         <permission name="android.permission.INTERACT_ACROSS_USERS"/>
+         <permission name="android.permission.MODIFY_PHONE_STATE"/>
+         <permission name="android.permission.USE_RESERVED_DISK"/>
++        <permission name="android.permission.WRITE_APN_SETTINGS"/>
+         <!-- Permissions required for reading and logging compat changes -->
+         <permission name="android.permission.LOG_COMPAT_CHANGE" />
+         <permission name="android.permission.READ_COMPAT_CHANGE_CONFIG" />

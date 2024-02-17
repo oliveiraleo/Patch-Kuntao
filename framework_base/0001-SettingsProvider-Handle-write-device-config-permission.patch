@@ -1,0 +1,71 @@
+From a8f3a10c5a35b0ed2be99d5d801ec2ca7ae1ad47 Mon Sep 17 00:00:00 2001
+From: Murat Kozan <muratkozan350@gmail.com>
+Date: Fri, 24 Feb 2023 22:06:43 +0300
+Subject: [PATCH] SettingsProvider: Handle WRITE_DEVICE_CONFIG permission
+ denial for gms
+
+---
+ .../providers/settings/SettingsProvider.java  | 20 +++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
+
+diff --git a/packages/SettingsProvider/src/com/android/providers/settings/SettingsProvider.java b/packages/SettingsProvider/src/com/android/providers/settings/SettingsProvider.java
+index 4c9500cf909a7..066a9bb141464 100644
+--- a/packages/SettingsProvider/src/com/android/providers/settings/SettingsProvider.java
++++ b/packages/SettingsProvider/src/com/android/providers/settings/SettingsProvider.java
+@@ -1145,8 +1145,8 @@ private boolean insertConfigSetting(String name, String value, boolean makeDefau
+             Slog.v(LOG_TAG, "setAllConfigSettings for prefix: " + prefix);
+         }
+ 
+-        enforceWritePermission(Manifest.permission.WRITE_DEVICE_CONFIG);
+         final String callingPackage = resolveCallingPackage();
++        enforceWriteDeviceConfigPermission(callingPackage);
+ 
+         synchronized (mLock) {
+             if (isSyncDisabledConfigLocked()) {
+@@ -1164,7 +1164,8 @@ private void setSyncDisabledConfig(@SyncDisabledMode int syncDisabledMode) {
+             Slog.v(LOG_TAG, "setSyncDisabledConfig(" + syncDisabledMode + ")");
+         }
+ 
+-        enforceWritePermission(Manifest.permission.WRITE_DEVICE_CONFIG);
++        final String callingPackage = resolveCallingPackage();
++        enforceWriteDeviceConfigPermission(callingPackage);
+ 
+         synchronized (mLock) {
+             setSyncDisabledConfigLocked(syncDisabledMode);
+@@ -1176,7 +1177,8 @@ private boolean isSyncDisabledConfig() {
+             Slog.v(LOG_TAG, "isSyncDisabledConfig");
+         }
+ 
+-        enforceWritePermission(Manifest.permission.WRITE_DEVICE_CONFIG);
++        final String callingPackage = resolveCallingPackage();
++        enforceWriteDeviceConfigPermission(callingPackage);
+ 
+         synchronized (mLock) {
+             return isSyncDisabledConfigLocked();
+@@ -1259,8 +1261,8 @@ private void resetConfigSetting(int mode, String prefix) {
+ 
+     private boolean mutateConfigSetting(String name, String value, String prefix,
+             boolean makeDefault, int operation, int mode) {
+-        enforceWritePermission(Manifest.permission.WRITE_DEVICE_CONFIG);
+         final String callingPackage = resolveCallingPackage();
++        enforceWriteDeviceConfigPermission(callingPackage);
+ 
+         // Perform the mutation.
+         synchronized (mLock) {
+@@ -2248,6 +2250,16 @@ private void enforceWritePermission(String permission) {
+         }
+     }
+ 
++    private void enforceWriteDeviceConfigPermission(String packageName) {
++        if (packageName.equals("com.google.android.gms")) return;
++        if (getContext().checkCallingOrSelfPermission(Manifest.permission.WRITE_DEVICE_CONFIG)
++                != PackageManager.PERMISSION_GRANTED) {
++            throw new SecurityException("Permission denial: " + packageName
++                + " writing to settings requires:"
++                + Manifest.permission.WRITE_DEVICE_CONFIG);
++        }
++    }
++
+     private static void warnOrThrowForUndesiredSecureSettingsMutationForTargetSdk(
+             int targetSdkVersion, String name) {
+         // If the app targets Lollipop MR1 or older SDK we warn, otherwise crash.

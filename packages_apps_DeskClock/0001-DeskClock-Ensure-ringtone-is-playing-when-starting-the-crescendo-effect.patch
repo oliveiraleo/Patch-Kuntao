@@ -1,0 +1,77 @@
+From 954a41ced3250f0b1e39836d521037019b5ae7c7 Mon Sep 17 00:00:00 2001
+From: Murat Kozan <muratkozan350@gmail.com>
+Date: Wed, 15 Feb 2023 16:58:40 +0300
+Subject: [PATCH] DeskClock: Ensure ringtone is playing when starting the
+ crescendo effect
+
+The bug:
+No alarm sound when Gradually increase volume option is set. Same feature works as expected in Google Clock app from Playstore. Also, I can't reproduce it on any LOS version, but I was always able to reproduce it starting from crDroid 6 (didn't checked further down).
+
+To reproduce:
+
+1. Set Gradually increase volume for alarm
+2. Set alarm
+3. Hear no audio at all when alarm is fired
+---
+ .../deskclock/AsyncRingtonePlayer.java        | 31 +++++++++++++++++--
+ 1 file changed, 28 insertions(+), 3 deletions(-)
+
+diff --git a/src/com/android/deskclock/AsyncRingtonePlayer.java b/src/com/android/deskclock/AsyncRingtonePlayer.java
+index 09fb1ef64..cdc342f77 100644
+--- a/src/com/android/deskclock/AsyncRingtonePlayer.java
++++ b/src/com/android/deskclock/AsyncRingtonePlayer.java
+@@ -435,6 +435,9 @@ private class RingtonePlaybackDelegate implements PlaybackDelegate {
+         /** The current ringtone. Only used by the ringtone thread. */
+         private Ringtone mRingtone;
+ 
++        /** The ringtone playback attempts counter. */
++        private int mRingtonePlayRetries = 0;
++
+         /** The method to adjust playback volume; cannot be null. */
+         private Method mSetVolumeMethod;
+ 
+@@ -603,13 +606,35 @@ public void stop(Context context) {
+         public boolean adjustVolume(Context context) {
+             checkAsyncRingtonePlayerThread();
+ 
+-            // If ringtone is absent or not playing, ignore volume adjustment.
+-            if (mRingtone == null || !mRingtone.isPlaying()) {
++            // If ringtone is absent, ignore volume adjustment.
++            if (mRingtone == null) {
+                 mCrescendoDuration = 0;
+                 mCrescendoStopTime = 0;
+                 return false;
+             }
+ 
++            // If ringtone is not playing, to avoid being muted forever recheck
++            // to ensure reliability.
++            if (!mRingtone.isPlaying()) {
++                if (mRingtonePlayRetries < 10) {
++                    mRingtonePlayRetries++;
++                    // Reuse the crescendo messaging looper to return here
++                    // again.
++                    return true;
++                }
++
++                mRingtonePlayRetries = 0;
++                mCrescendoDuration = 0;
++                mCrescendoStopTime = 0;
++                return false;
++            }
++
++            if (mRingtonePlayRetries > 0) {
++                mRingtonePlayRetries = 0;
++                // Compute again the time at which the crescendo will stop.
++                mCrescendoStopTime = Utils.now() + mCrescendoDuration;
++            }
++
+             // If the crescendo is complete set the volume to the maximum; we're done.
+             final long currentTime = Utils.now();
+             if (currentTime > mCrescendoStopTime) {
+@@ -626,4 +651,4 @@ public boolean adjustVolume(Context context) {
+             return true;
+         }
+     }
+-}
+\ No newline at end of file
++}

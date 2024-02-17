@@ -1,0 +1,37 @@
+From 59bde557151809cb07a7ac9d6702b4b18a2ac6db Mon Sep 17 00:00:00 2001
+From: Murat Kozan <muratkozan350@gmail.com>
+Date: Fri, 24 Feb 2023 22:10:31 +0300
+Subject: [PATCH] BootReceiver: Return early if trace_pipe doesn't exists
+
+* instead of trigerring errnoexception, check if the file or directory exists first , otherwise perform a early return so we can skip the following exception below
+
+12-16 13:05:46.592  1438  1438 E BootReceiver: Could not open /sys/kernel/tracing/instances/bootreceiver/trace_pipe
+12-16 13:05:46.592  1438  1438 E BootReceiver: android.system.ErrnoException: open failed: ENOENT (No such file or directory)
+---
+ services/core/java/com/android/server/BootReceiver.java | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/services/core/java/com/android/server/BootReceiver.java b/services/core/java/com/android/server/BootReceiver.java
+index 48f5b51a84047..e07114ca7750a 100644
+--- a/services/core/java/com/android/server/BootReceiver.java
++++ b/services/core/java/com/android/server/BootReceiver.java
+@@ -134,6 +134,11 @@ public class BootReceiver extends BroadcastReceiver {
+     // Avoid reporing the same bug from processDmesg() twice.
+     private static String sLastReportedBug = null;
+ 
++    public boolean fileExists(String fileName) {
++       final File file = new File(fileName);
++        return file.exists();
++    }
++
+     @Override
+     public void onReceive(final Context context, Intent intent) {
+         // Log boot events in the background to avoid blocking the main thread with I/O
+@@ -164,6 +169,7 @@ public void run() {
+ 
+         FileDescriptor tracefd = null;
+         try {
++            if (!fileExists(ERROR_REPORT_TRACE_PIPE)) return;
+             tracefd = Os.open(ERROR_REPORT_TRACE_PIPE, O_RDONLY, 0600);
+         } catch (ErrnoException e) {
+             Slog.wtf(TAG, "Could not open " + ERROR_REPORT_TRACE_PIPE, e);

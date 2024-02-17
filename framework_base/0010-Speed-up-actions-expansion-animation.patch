@@ -1,0 +1,26 @@
+From 705b39aeb11262fd95f88c11075dc39cccd54db1 Mon Sep 17 00:00:00 2001
+From: Murat Kozan <muratkozan350@gmail.com>
+Date: Sun, 2 Jul 2023 09:59:40 +0300
+Subject: [PATCH] SystemUI: Speed up actions expansion animation
+
+400 ms feels too long for this, especially when the actions already take
+so long to show up due to how long saving the screenshot takes.
+---
+ .../src/com/android/systemui/screenshot/ScreenshotView.java   | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/packages/SystemUI/src/com/android/systemui/screenshot/ScreenshotView.java b/packages/SystemUI/src/com/android/systemui/screenshot/ScreenshotView.java
+index 2d20d88310f22..e8a2b58d73798 100644
+--- a/packages/SystemUI/src/com/android/systemui/screenshot/ScreenshotView.java
++++ b/packages/SystemUI/src/com/android/systemui/screenshot/ScreenshotView.java
+@@ -117,8 +117,8 @@ interface ScreenshotViewCallback {
+     private static final long SCREENSHOT_TO_CORNER_X_DURATION_MS = 234;
+     private static final long SCREENSHOT_TO_CORNER_Y_DURATION_MS = 500;
+     private static final long SCREENSHOT_TO_CORNER_SCALE_DURATION_MS = 234;
+-    private static final long SCREENSHOT_ACTIONS_EXPANSION_DURATION_MS = 400;
+-    private static final long SCREENSHOT_ACTIONS_ALPHA_DURATION_MS = 100;
++    private static final long SCREENSHOT_ACTIONS_EXPANSION_DURATION_MS = 300;
++    private static final long SCREENSHOT_ACTIONS_ALPHA_DURATION_MS = 75;
+     private static final long SCREENSHOT_DISMISS_X_DURATION_MS = 350;
+     private static final long SCREENSHOT_DISMISS_ALPHA_DURATION_MS = 350;
+     private static final long SCREENSHOT_DISMISS_ALPHA_OFFSET_MS = 50; // delay before starting fade

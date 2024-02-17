@@ -1,0 +1,22 @@
+From 72cbb194c9ac53c2e239cb188ce2248fc2a56021 Mon Sep 17 00:00:00 2001
+From: Roman Stratiienko <r.stratiienko@gmail.com>
+Date: Thu, 15 Feb 2024 19:07:34 +0300
+Subject: [PATCH] Don't use PATTERNED style ripple effect by default
+
+---
+ graphics/java/android/graphics/drawable/RippleDrawable.java | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/graphics/java/android/graphics/drawable/RippleDrawable.java b/graphics/java/android/graphics/drawable/RippleDrawable.java
+index 7354c90c5c981..4481b7b3c0387 100644
+--- a/graphics/java/android/graphics/drawable/RippleDrawable.java
++++ b/graphics/java/android/graphics/drawable/RippleDrawable.java
+@@ -157,7 +157,7 @@ public class RippleDrawable extends LayerDrawable {
+     private static final LinearInterpolator LINEAR_INTERPOLATOR = new LinearInterpolator();
+     private static final int DEFAULT_EFFECT_COLOR = 0x8dffffff;
+     /** Temporary flag for teamfood. **/
+-    private static final boolean FORCE_PATTERNED_STYLE = true;
++    private static final boolean FORCE_PATTERNED_STYLE = false;
+ 
+     private final Rect mTempRect = new Rect();
+ 

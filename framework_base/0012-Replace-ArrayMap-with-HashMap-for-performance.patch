@@ -1,0 +1,213 @@
+From 0e1bfd6ae069a9c83b15e1953eabaf16057c6992 Mon Sep 17 00:00:00 2001
+From: Danny Lin <danny@kdrag0n.dev>
+Date: Sat, 12 Aug 2023 10:52:57 +0300
+Subject: [PATCH] Replace ArrayMap with HashMap for performance
+
+---
+ .../android/app/SystemServiceRegistry.java    |  8 +++---
+ .../content/res/ThemedResourceCache.java      | 13 ++++-----
+ .../com/android/server/LocalServices.java     |  6 ++--
+ .../server/wm/InsetsStateController.java      | 28 +++++++++----------
+ 4 files changed, 25 insertions(+), 30 deletions(-)
+
+diff --git a/core/java/android/app/SystemServiceRegistry.java b/core/java/android/app/SystemServiceRegistry.java
+index 32ea41b2c75f5..e727b78e8add1 100644
+--- a/core/java/android/app/SystemServiceRegistry.java
++++ b/core/java/android/app/SystemServiceRegistry.java
+@@ -202,7 +202,6 @@
+ import android.telephony.MmsManager;
+ import android.telephony.TelephonyFrameworkInitializer;
+ import android.telephony.TelephonyRegistryManager;
+-import android.util.ArrayMap;
+ import android.util.Log;
+ import android.util.Slog;
+ import android.uwb.UwbManager;
+@@ -234,6 +233,7 @@
+ import com.android.internal.policy.PhoneLayoutInflater;
+ import com.android.internal.util.Preconditions;
+ 
++import java.util.HashMap;
+ import java.util.Map;
+ import java.util.Objects;
+ 
+@@ -253,10 +253,10 @@ public final class SystemServiceRegistry {
+     // Service registry information.
+     // This information is never changed once static initialization has completed.
+     private static final Map<Class<?>, String> SYSTEM_SERVICE_NAMES =
+-            new ArrayMap<Class<?>, String>();
++            new HashMap<Class<?>, String>();
+     private static final Map<String, ServiceFetcher<?>> SYSTEM_SERVICE_FETCHERS =
+-            new ArrayMap<String, ServiceFetcher<?>>();
+-    private static final Map<String, String> SYSTEM_SERVICE_CLASS_NAMES = new ArrayMap<>();
++            new HashMap<String, ServiceFetcher<?>>();
++    private static final Map<String, String> SYSTEM_SERVICE_CLASS_NAMES = new HashMap<>();
+ 
+     private static int sServiceCacheSize;
+ 
+diff --git a/core/java/android/content/res/ThemedResourceCache.java b/core/java/android/content/res/ThemedResourceCache.java
+index 3270944ce7e37..e0701b90d6fab 100644
+--- a/core/java/android/content/res/ThemedResourceCache.java
++++ b/core/java/android/content/res/ThemedResourceCache.java
+@@ -22,10 +22,10 @@
+ import android.content.pm.ActivityInfo.Config;
+ import android.content.res.Resources.Theme;
+ import android.content.res.Resources.ThemeKey;
+-import android.util.ArrayMap;
+ import android.util.LongSparseArray;
+ 
+ import java.lang.ref.WeakReference;
++import java.util.HashMap;
+ 
+ /**
+  * Data structure used for caching data against themes.
+@@ -34,7 +34,7 @@
+  */
+ abstract class ThemedResourceCache<T> {
+     @UnsupportedAppUsage
+-    private ArrayMap<ThemeKey, LongSparseArray<WeakReference<T>>> mThemedEntries;
++    private HashMap<ThemeKey, LongSparseArray<WeakReference<T>>> mThemedEntries;
+     private LongSparseArray<WeakReference<T>> mUnthemedEntries;
+     private LongSparseArray<WeakReference<T>> mNullThemedEntries;
+ 
+@@ -154,7 +154,7 @@ private LongSparseArray<WeakReference<T>> getThemedLocked(@Nullable Theme t, boo
+ 
+         if (mThemedEntries == null) {
+             if (create) {
+-                mThemedEntries = new ArrayMap<>(1);
++                mThemedEntries = new HashMap<>(1);
+             } else {
+                 return null;
+             }
+@@ -199,11 +199,8 @@ private LongSparseArray<WeakReference<T>> getUnthemedLocked(boolean create) {
+     private boolean prune(@Config int configChanges) {
+         synchronized (this) {
+             if (mThemedEntries != null) {
+-                for (int i = mThemedEntries.size() - 1; i >= 0; i--) {
+-                    if (pruneEntriesLocked(mThemedEntries.valueAt(i), configChanges)) {
+-                        mThemedEntries.removeAt(i);
+-                    }
+-                }
++                mThemedEntries.entrySet()
++                    .removeIf(entry -> pruneEntriesLocked(entry.getValue(), configChanges));
+             }
+ 
+             pruneEntriesLocked(mNullThemedEntries, configChanges);
+diff --git a/core/java/com/android/server/LocalServices.java b/core/java/com/android/server/LocalServices.java
+index 9c632ea725a92..ca94bb08afc0c 100644
+--- a/core/java/com/android/server/LocalServices.java
++++ b/core/java/com/android/server/LocalServices.java
+@@ -18,7 +18,7 @@
+ 
+ import com.android.internal.annotations.VisibleForTesting;
+ 
+-import android.util.ArrayMap;
++import java.util.HashMap;
+ 
+ /**
+  * This class is used in a similar way as ServiceManager, except the services registered here
+@@ -32,8 +32,8 @@
+ public final class LocalServices {
+     private LocalServices() {}
+ 
+-    private static final ArrayMap<Class<?>, Object> sLocalServiceObjects =
+-            new ArrayMap<Class<?>, Object>();
++    private static final HashMap<Class<?>, Object> sLocalServiceObjects =
++            new HashMap<Class<?>, Object>();
+ 
+     /**
+      * Returns a local service instance that implements the specified interface.
+diff --git a/services/core/java/com/android/server/wm/InsetsStateController.java b/services/core/java/com/android/server/wm/InsetsStateController.java
+index c4ca8e3640118..7a332fa38ba6b 100644
+--- a/services/core/java/com/android/server/wm/InsetsStateController.java
++++ b/services/core/java/com/android/server/wm/InsetsStateController.java
+@@ -57,6 +57,8 @@
+ import java.io.PrintWriter;
+ import java.util.ArrayList;
+ import java.util.function.Consumer;
++import java.util.HashMap;
++import java.util.Map;
+ 
+ /**
+  * Manages global window inset state in the system represented by {@link InsetsState}.
+@@ -67,7 +69,7 @@ class InsetsStateController {
+     private final InsetsState mState = new InsetsState();
+     private final DisplayContent mDisplayContent;
+ 
+-    private final ArrayMap<Integer, InsetsSourceProvider> mProviders = new ArrayMap<>();
++    private final HashMap<Integer, InsetsSourceProvider> mProviders = new HashMap<>();
+     private final ArrayMap<InsetsControlTarget, ArrayList<Integer>> mControlTargetTypeMap =
+             new ArrayMap<>();
+     private final SparseArray<InsetsControlTarget> mTypeControlTargetMap = new SparseArray<>();
+@@ -201,8 +203,7 @@ private InsetsState getInsetsForTarget(@InternalInsetsType int type,
+ 
+             // IME needs different frames for certain cases (e.g. navigation bar in gesture nav).
+             if (type == ITYPE_IME) {
+-                for (int i = mProviders.size() - 1; i >= 0; i--) {
+-                    InsetsSourceProvider otherProvider = mProviders.valueAt(i);
++                for (InsetsSourceProvider otherProvider : mProviders.values()) {
+                     if (otherProvider.overridesImeFrame()) {
+                         InsetsSource override =
+                                 new InsetsSource(
+@@ -249,8 +250,7 @@ InsetsState getRawInsetsState() {
+     }
+ 
+     public void addProvidersToTransition() {
+-        for (int i = mProviders.size() - 1; i >= 0; --i) {
+-            final InsetsSourceProvider p = mProviders.valueAt(i);
++        for (final InsetsSourceProvider p : mProviders.values()) {
+             if (p == null) continue;
+             final WindowContainer wc = p.mWin;
+             if (wc == null) continue;
+@@ -288,8 +288,8 @@ ImeInsetsSourceProvider getImeSourceProvider() {
+      */
+     void onPostLayout() {
+         Trace.traceBegin(TRACE_TAG_WINDOW_MANAGER, "ISC.onPostLayout");
+-        for (int i = mProviders.size() - 1; i >= 0; i--) {
+-            mProviders.valueAt(i).onPostLayout();
++        for (InsetsSourceProvider provider : mProviders.values()) {
++            provider.onPostLayout();
+         }
+         final ArrayList<WindowState> winInsetsChanged = mDisplayContent.mWinInsetsChanged;
+         if (!mLastState.equals(mState)) {
+@@ -379,8 +379,8 @@ void onDisplayInfoUpdated(boolean notifyInsetsChange) {
+ 
+     void onInsetsModified(InsetsControlTarget caller) {
+         boolean changed = false;
+-        for (int i = mProviders.size() - 1; i >= 0; i--) {
+-            changed |= mProviders.valueAt(i).updateClientVisibility(caller);
++        for (InsetsSourceProvider provider : mProviders.values()) {
++            changed |= provider.updateClientVisibility(caller);
+         }
+         if (changed) {
+             notifyInsetsChanged();
+@@ -399,8 +399,7 @@ void onInsetsModified(InsetsControlTarget caller) {
+     void computeSimulatedState(WindowState win, DisplayFrames displayFrames,
+             WindowFrames windowFrames) {
+         final InsetsState state = displayFrames.mInsetsState;
+-        for (int i = mProviders.size() - 1; i >= 0; i--) {
+-            final InsetsSourceProvider provider = mProviders.valueAt(i);
++        for (final InsetsSourceProvider provider : mProviders.values()) {
+             if (provider.mWin == win) {
+                 state.addSource(provider.createSimulatedSource(displayFrames, windowFrames));
+             }
+@@ -542,8 +541,7 @@ private void notifyPendingInsetsControlChanged() {
+             return;
+         }
+         mDisplayContent.mWmService.mAnimator.addAfterPrepareSurfacesRunnable(() -> {
+-            for (int i = mProviders.size() - 1; i >= 0; i--) {
+-                final InsetsSourceProvider provider = mProviders.valueAt(i);
++            for (final InsetsSourceProvider provider : mProviders.values()) {
+                 provider.onSurfaceTransactionApplied();
+             }
+             final ArraySet<InsetsControlTarget> newControlTargets = new ArraySet<>();
+@@ -582,8 +580,8 @@ void dump(String prefix, PrintWriter pw) {
+                     + mTypeControlTargetMap.valueAt(i));
+         }
+         pw.println(prefix + "InsetsSourceProviders:");
+-        for (int i = mProviders.size() - 1; i >= 0; i--) {
+-            mProviders.valueAt(i).dump(pw, prefix + "  ");
++        for (InsetsSourceProvider provider : mProviders.values()) {
++            provider.dump(pw, prefix + "  ");
+         }
+     }
+ }
