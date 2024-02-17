@@ -1,0 +1,59 @@
+From c14268f98855374f864101d57189b4ff5a7e9da6 Mon Sep 17 00:00:00 2001
+From: Murat Kozan <muratkozan350@gmail.com>
+Date: Sat, 6 May 2023 08:06:28 +0300
+Subject: [PATCH] SurfaceFlinger: Dont cleanup resources from previous frame on
+ display
+
+Causes bad lag on some legacy devices.
+---
+ services/surfaceflinger/Android.bp         | 1 +
+ services/surfaceflinger/SurfaceFlinger.cpp | 6 ++++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/services/surfaceflinger/Android.bp b/services/surfaceflinger/Android.bp
+index 7548380a589..6396063d4e4 100644
+--- a/services/surfaceflinger/Android.bp
++++ b/services/surfaceflinger/Android.bp
+@@ -24,6 +24,7 @@ cc_defaults {
+ cc_defaults {
+     name: "libsurfaceflinger_defaults",
+     defaults: [
++        "disable_postrender_cleanup_defaults",
+         "surfaceflinger_defaults",
+         "skia_renderengine_deps",
+         "surfaceflinger_qcom_ext_defaults",
+diff --git a/services/surfaceflinger/SurfaceFlinger.cpp b/services/surfaceflinger/SurfaceFlinger.cpp
+index 96b85d1d6fd..779a74e7d87 100644
+--- a/services/surfaceflinger/SurfaceFlinger.cpp
++++ b/services/surfaceflinger/SurfaceFlinger.cpp
+@@ -2585,7 +2585,9 @@ void SurfaceFlinger::postComposition() {
+     mTimeStats->recordDisplayEventConnectionCount(sfConnections + appConnections);
+ 
+     if (isDisplayConnected && !display->isPoweredOn()) {
++#ifndef DISABLE_POSTRENDER_CLEANUP
+         getRenderEngine().cleanupPostRender();
++#endif
+         return;
+     }
+ 
+@@ -2604,8 +2606,10 @@ void SurfaceFlinger::postComposition() {
+     }
+     getBE().mLastSwapTime = currentTime;
+ 
++#ifndef DISABLE_POSTRENDER_CLEANUP
+     // Cleanup any outstanding resources due to rendering a prior frame.
+     getRenderEngine().cleanupPostRender();
++#endif
+ 
+     {
+         std::lock_guard lock(mTexturePoolMutex);
+@@ -3067,7 +3071,9 @@ void SurfaceFlinger::processDisplayChanged(const wp<IBinder>& displayToken,
+ 
+     // Recreate the DisplayDevice if the surface or sequence ID changed.
+     if (currentBinder != drawingBinder || currentState.sequenceId != drawingState.sequenceId) {
++#ifndef DISABLE_POSTRENDER_CLEANUP
+         getRenderEngine().cleanFramebufferCache();
++#endif
+ 
+         if (const auto display = getDisplayDeviceLocked(displayToken)) {
+             display->disconnect();

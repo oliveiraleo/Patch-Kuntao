@@ -1,0 +1,53 @@
+From 930fccb980fdc3da583862c1ad234b7685e9fd6a Mon Sep 17 00:00:00 2001
+From: minaripenguin <minaripenguin@users.noreply.github.com>
+Date: Tue, 6 Feb 2024 16:53:07 +0300
+Subject: [PATCH] wm: Optimize window/transition animation scaling
+
+---
+ .../server/wm/WindowManagerService.java       | 22 +++++++++++++++++--
+ 1 file changed, 20 insertions(+), 2 deletions(-)
+
+diff --git a/services/core/java/com/android/server/wm/WindowManagerService.java b/services/core/java/com/android/server/wm/WindowManagerService.java
+index be414b697368e..a8932b8c2703c 100644
+--- a/services/core/java/com/android/server/wm/WindowManagerService.java
++++ b/services/core/java/com/android/server/wm/WindowManagerService.java
+@@ -362,6 +362,8 @@ public class WindowManagerService extends IWindowManager.Stub
+     static final int LAYOUT_REPEAT_THRESHOLD = 4;
+ 
+     static final boolean PROFILE_ORIENTATION = false;
++    static WindowState mFocusingWindow;
++    String mFocusingActivity;
+ 
+     /** The maximum length we will accept for a loaded animation duration:
+      * this is 10 seconds.
+@@ -3506,12 +3508,28 @@ private void setAnimatorDurationScale(float scale) {
+         ValueAnimator.setDurationScale(scale);
+     }
+ 
++    private float animationScalesCheck (int which) {
++        float value = -1.0f;
++        if (!mAnimationsDisabled) {
++            if (value == -1.0f) {
++                switch (which) {
++                    case WINDOW_ANIMATION_SCALE: value = mWindowAnimationScaleSetting; break;
++                    case TRANSITION_ANIMATION_SCALE: value = mTransitionAnimationScaleSetting; break;
++                    case ANIMATION_DURATION_SCALE: value = mAnimatorDurationScaleSetting; break;
++                }
++            }
++        } else {
++            value = 0;
++        }
++        return value;
++    }
++
+     public float getWindowAnimationScaleLocked() {
+-        return mAnimationsDisabled ? 0 : mWindowAnimationScaleSetting;
++        return animationScalesCheck(WINDOW_ANIMATION_SCALE);
+     }
+ 
+     public float getTransitionAnimationScaleLocked() {
+-        return mAnimationsDisabled ? 0 : mTransitionAnimationScaleSetting;
++        return animationScalesCheck(TRANSITION_ANIMATION_SCALE);
+     }
+ 
+     @Override

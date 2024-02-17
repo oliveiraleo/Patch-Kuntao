@@ -1,0 +1,103 @@
+From 10b209b2828b965f3e2207aaac9e73b96f62a484 Mon Sep 17 00:00:00 2001
+From: Jiakai Zhang <jiakaiz@google.com>
+Date: Thu, 10 Nov 2022 10:45:48 +0000
+Subject: [PATCH] Fix the logic of parsing profilebootclasspath flags.
+
+There are two pieces of code that parse profilebootclasspath sysprops:
+one in ZygoteInit.java
+(https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/com/android/internal/os/ZygoteInit.java;l=359;drc=6cbc807a6f11f43054d0d0ff0221bb3e6ab35d1c)
+and one in AndroidRuntime.cpp
+(https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/jni/AndroidRuntime.cpp;l=704-714;drc=ff1ed5d78df2edaaf1e51e2434548a66cd124366).
+
+Before this change, there are two inconsistencies between them:
+1. AndroidRuntime.cpp prefers the "dalvik.vm" property, while
+   ZygoteInit.java prefers the phenotype flag.
+2. AndroidRuntime.cpp only accepts "true", while ZygoteInit.java accepts
+   "1", "y", "yes", "on", and "true".
+The device goes into a weird state when the flags are set in a way that
+makes the two pieces of code disagree with each other.
+
+This CL changes the logic in AndroidRuntime.cpp to make it the same as
+the one in ZygoteInit.java.
+
+Bug: 258486155
+Test: -
+  1. adb shell setprop dalvik.vm.profilebootclasspath false
+  2. adb shell setprop dalvik.vm.profilesystemserver false
+  3. adb shell device_config set_sync_disabled_for_tests persistent
+  4. adb shell device_config put runtime_native_boot profilebootclasspath true
+  5. adb shell device_config put runtime_native_boot profilesystemserver true
+  6. adb shell stop && adb shell start
+  7. adb shell killall -USR1 system_server
+  8. adb shell profman --dump-only --profile-file=/data/misc/profiles/cur/0/android/primary.prof
+  9. See the boot image profile being properly generated.
+Test: -
+  1. adb shell setprop dalvik.vm.profilebootclasspath 1
+  2. adb shell setprop dalvik.vm.profilesystemserver 1
+  3. adb shell stop && adb shell start
+  4. adb shell killall -USR1 system_server
+  5. adb shell profman --dump-only --profile-file=/data/misc/profiles/cur/0/android/primary.prof
+  6. See the boot image profile being properly generated.
+
+Google: 2297438
+Change-Id: Ifef5a45b47427bc16e0799046bdffc5ab1747e9a
+---
+ core/jni/AndroidRuntime.cpp | 30 ++++++++++++++++++++----------
+ 1 file changed, 20 insertions(+), 10 deletions(-)
+
+diff --git a/core/jni/AndroidRuntime.cpp b/core/jni/AndroidRuntime.cpp
+index 955f19f2bac3c..710e4f70c58bd 100644
+--- a/core/jni/AndroidRuntime.cpp
++++ b/core/jni/AndroidRuntime.cpp
+@@ -19,6 +19,7 @@
+ #define LOG_NDEBUG 1
+ 
+ #include <android-base/macros.h>
++#include <android-base/parsebool.h>
+ #include <android-base/properties.h>
+ #include <android/graphics/jni_runtime.h>
+ #include <android_runtime/AndroidRuntime.h>
+@@ -53,6 +54,8 @@
+ using namespace android;
+ using android::base::GetBoolProperty;
+ using android::base::GetProperty;
++using android::base::ParseBool;
++using android::base::ParseBoolResult;
+ 
+ extern int register_android_os_Binder(JNIEnv* env);
+ extern int register_android_os_Process(JNIEnv* env);
+@@ -702,17 +705,24 @@ int AndroidRuntime::startVm(JavaVM** pJavaVM, JNIEnv** pEnv, bool zygote, bool p
+ 
+     // Read if we are using the profile configuration, do this at the start since the last ART args
+     // take precedence.
+-    property_get("dalvik.vm.profilebootclasspath", propBuf, "");
+-    std::string profile_boot_class_path_flag = propBuf;
+-    // Empty means the property is unset and we should default to the phenotype property.
+-    // The possible values are {"true", "false", ""}
+-    if (profile_boot_class_path_flag.empty()) {
+-        profile_boot_class_path_flag = server_configurable_flags::GetServerConfigurableFlag(
+-                RUNTIME_NATIVE_BOOT_NAMESPACE,
+-                PROFILE_BOOT_CLASS_PATH,
+-                /*default_value=*/ "");
++    std::string profile_boot_class_path_flag =
++            server_configurable_flags::GetServerConfigurableFlag(RUNTIME_NATIVE_BOOT_NAMESPACE,
++                                                                 PROFILE_BOOT_CLASS_PATH,
++                                                                 /*default_value=*/"");
++    bool profile_boot_class_path;
++    switch (ParseBool(profile_boot_class_path_flag)) {
++        case ParseBoolResult::kError:
++            // Default to the system property.
++            profile_boot_class_path =
++                    GetBoolProperty("dalvik.vm.profilebootclasspath", /*default_value=*/false);
++            break;
++        case ParseBoolResult::kTrue:
++            profile_boot_class_path = true;
++            break;
++        case ParseBoolResult::kFalse:
++            profile_boot_class_path = false;
++            break;
+     }
+-    const bool profile_boot_class_path = (profile_boot_class_path_flag == "true");
+     if (profile_boot_class_path) {
+         addOption("-Xcompiler-option");
+         addOption("--count-hotness-in-compiled-code");

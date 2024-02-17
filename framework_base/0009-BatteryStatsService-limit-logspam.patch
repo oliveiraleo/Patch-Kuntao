@@ -1,0 +1,32 @@
+From 7c1de4bd8d3ce6f26178049df1999dc478650f22 Mon Sep 17 00:00:00 2001
+From: Svet Ganov <svet@fb.com>
+Date: Fri, 28 Oct 2022 22:48:12 -0700
+Subject: [PATCH] BatteryStatsService: limit logspam
+
+BatteryStatsService prints info logs from wakeup callback which
+contaminating logcat. The log message is a fixed message and doesn't
+add any value. Changed to verbose level instead.
+
+Test: Builds
+
+Upstream from Meta.
+
+Change-Id: I2b97d4476d5810eb6efd603eab714324ee32cefc
+Signed-off-by: Pranav Vashi <neobuddy89@gmail.com>
+---
+ services/core/jni/com_android_server_am_BatteryStatsService.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/services/core/jni/com_android_server_am_BatteryStatsService.cpp b/services/core/jni/com_android_server_am_BatteryStatsService.cpp
+index 16eaa77e08225..3678cedeb87f4 100644
+--- a/services/core/jni/com_android_server_am_BatteryStatsService.cpp
++++ b/services/core/jni/com_android_server_am_BatteryStatsService.cpp
+@@ -98,7 +98,7 @@ class WakeupCallback : public BnSuspendCallback {
+ public:
+     binder::Status notifyWakeup(bool success,
+                                 const std::vector<std::string>& wakeupReasons) override {
+-        ALOGI("In wakeup_callback: %s", success ? "resumed from suspend" : "suspend aborted");
++        ALOGV("In wakeup_callback: %s", success ? "resumed from suspend" : "suspend aborted");
+         bool reasonsCaptured = false;
+         {
+             std::unique_lock<std::mutex> reasonsLock(mReasonsMutex, std::defer_lock);

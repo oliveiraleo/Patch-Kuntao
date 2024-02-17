@@ -1,0 +1,23 @@
+From 21fb8d899471362aebb0d81b90688c5ec6944d2f Mon Sep 17 00:00:00 2001
+From: minaripenguin <minaripenguin@users.noreply.github.com>
+Date: Tue, 6 Feb 2024 21:41:31 +0300
+Subject: [PATCH] SystemUI: Optimize notificiation expansion animation
+
+---
+ .../systemui/shade/NotificationPanelViewController.java        | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/packages/SystemUI/src/com/android/systemui/shade/NotificationPanelViewController.java b/packages/SystemUI/src/com/android/systemui/shade/NotificationPanelViewController.java
+index 796ccd50a69db..67873fc5057e2 100644
+--- a/packages/SystemUI/src/com/android/systemui/shade/NotificationPanelViewController.java
++++ b/packages/SystemUI/src/com/android/systemui/shade/NotificationPanelViewController.java
+@@ -2510,7 +2510,8 @@ private void updateNotificationTranslucency() {
+                 && !mKeyguardBypassController.getBypassEnabled()) {
+             alpha *= mClockPositionResult.clockAlpha;
+         }
+-        mNotificationStackScrollLayoutController.setAlpha(alpha);
++        float finalAlpha = alpha > 0.84f ? alpha : 0f;
++        mNotificationStackScrollLayoutController.setAlpha(finalAlpha);
+     }
+ 
+     private float getFadeoutAlpha() {

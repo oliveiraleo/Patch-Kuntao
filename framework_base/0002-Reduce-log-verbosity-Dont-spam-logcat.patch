@@ -1,0 +1,25 @@
+From ace85d6836287dfcfa7863ed404cb1ae557dc8d8 Mon Sep 17 00:00:00 2001
+From: fusionjack <dogfight60-fusionjack@yahoo.de>
+Date: Sat, 31 May 2014 17:53:55 +0200
+Subject: [PATCH] Reduce log verbosity: Don't spam logcat
+
+Change-Id: I47fee6a90c9c88fe451b4c35182ed8601d6b326d
+Signed-off-by: neobuddy89 <neobuddy89@gmail.com>
+Signed-off-by: Pranav Vashi <neobuddy89@gmail.com>
+---
+ libs/androidfw/ResourceTypes.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libs/androidfw/ResourceTypes.cpp b/libs/androidfw/ResourceTypes.cpp
+index a74f4e06aa8fb..f498459d37e33 100644
+--- a/libs/androidfw/ResourceTypes.cpp
++++ b/libs/androidfw/ResourceTypes.cpp
+@@ -4388,7 +4388,7 @@ bool ResTable::getResourceName(uint32_t resID, bool allowUtf8, resource_name* ou
+ 
+     if (p < 0) {
+         if (Res_GETPACKAGE(resID)+1 == 0) {
+-            ALOGW("No package identifier when getting name for resource number 0x%08x", resID);
++            ALOGV("No package identifier when getting name for resource number 0x%08x", resID);
+         } else {
+ #ifndef STATIC_ANDROIDFW_FOR_TOOLS
+             ALOGW("No known package when getting name for resource number 0x%08x", resID);

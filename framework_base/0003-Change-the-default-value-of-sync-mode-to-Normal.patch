@@ -1,0 +1,35 @@
+From ca1512f16eb6a3b6cc24d59c218056ea325cfda3 Mon Sep 17 00:00:00 2001
+From: ot905302 <ot_qian.cheng@mediatek.com>
+Date: Tue, 13 Sep 2022 17:56:53 +0800
+Subject: [PATCH] Change the default value of sync mode to NORMAL
+
+When journal mode is WAL ,the default sync mode is FULL.
+In Android S when journal mode is WAL,the default sync mode is NORMAL.
+
+In the annotation of google it's said when journal mode is WAL,
+the best sync mode should be NORMAL.
+
+Incorrect sync mode cause performance drop.
+
+Bug: 246753316
+Test: run fs benchmark
+
+Change-Id: I8110d66091cd443db9b09f6e8564f9d97f5e7297
+Signed-off-by: Pranav Vashi <neobuddy89@gmail.com>
+---
+ .../android/database/sqlite/SQLiteDatabaseConfiguration.java    | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/core/java/android/database/sqlite/SQLiteDatabaseConfiguration.java b/core/java/android/database/sqlite/SQLiteDatabaseConfiguration.java
+index 8305843140399..bc6368639baa7 100644
+--- a/core/java/android/database/sqlite/SQLiteDatabaseConfiguration.java
++++ b/core/java/android/database/sqlite/SQLiteDatabaseConfiguration.java
+@@ -299,7 +299,7 @@ boolean isLookasideConfigSet() {
+             if (isLegacyCompatibilityWalEnabled()) {
+                 return SQLiteCompatibilityWalFlags.getWALSyncMode();
+             } else {
+-                return SQLiteGlobal.getDefaultSyncMode();
++                return SQLiteGlobal.getWALSyncMode();
+             }
+         } else {
+             return SQLiteGlobal.getDefaultSyncMode();

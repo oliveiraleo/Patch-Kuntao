@@ -1,0 +1,26 @@
+From 71b6161a9c2d48bd52ae99abffbda7837afc47cc Mon Sep 17 00:00:00 2001
+From: Astridxx <muratkozan350@gmail.com>
+Date: Mon, 12 Jun 2023 19:37:30 +0300
+Subject: [PATCH] Settings: Add a preference to battery optimization page
+
+---
+ res/xml/power_usage_summary.xml | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/res/xml/power_usage_summary.xml b/res/xml/power_usage_summary.xml
+index a02851d5a39..b04d4a7ded5 100644
+--- a/res/xml/power_usage_summary.xml
++++ b/res/xml/power_usage_summary.xml
+@@ -58,6 +58,12 @@
+         settings:controller="com.android.settings.fuelgauge.batterytip.BatteryManagerPreferenceController"
+         settings:keywords="@string/keywords_battery_adaptive_preferences" />
+ 
++    <Preference
++        android:key="high_power_apps"
++        android:title="@string/high_power_apps">
++        <intent android:action="android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS" />
++    </Preference>
++
+     <!-- Charging control -->
+     <lineageos.preference.LineagePartsPreference
+         android:key="charging_control"

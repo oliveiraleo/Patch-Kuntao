@@ -1,0 +1,113 @@
+From 0113b5e8990ec95f459ba2b949c0c8ed10b0eaa2 Mon Sep 17 00:00:00 2001
+From: minaripenguin37 <alexfinhart@gmail.com>
+Date: Tue, 6 Feb 2024 16:00:38 +0300
+Subject: [PATCH] services: Boost gesture flings
+
+---
+ .../com/android/server/wm/DisplayPolicy.java  | 26 +++++++++++++++++++
+ .../SystemGesturesPointerEventListener.java   | 23 ++++++++++++++++
+ 2 files changed, 49 insertions(+)
+
+diff --git a/services/core/java/com/android/server/wm/DisplayPolicy.java b/services/core/java/com/android/server/wm/DisplayPolicy.java
+index c9f0794a3201a..d61bb0f9399f3 100644
+--- a/services/core/java/com/android/server/wm/DisplayPolicy.java
++++ b/services/core/java/com/android/server/wm/DisplayPolicy.java
+@@ -554,6 +554,32 @@ public void onFling(int duration) {
+                         }
+                     }
+ 
++                @Override
++                public void onVerticalFling(int duration) {
++                    if (mService.mPowerManagerInternal != null) {
++                        mService.mPowerManagerInternal.setPowerBoost(
++                                Boost.INTERACTION, duration + 320);
++                    }
++                }
++
++                @Override
++                public void onHorizontalFling(int duration) {
++                    if (mService.mPowerManagerInternal != null) {
++                        mService.mPowerManagerInternal.setPowerBoost(
++                                Boost.INTERACTION, duration + 160);
++                    }
++                }
++
++                @Override
++                public void onScroll(boolean started) {
++                    if (started) {
++                        if (mService.mPowerManagerInternal != null) {
++                            mService.mPowerManagerInternal.setPowerBoost(
++                                 Boost.DISPLAY_UPDATE_IMMINENT, 500);
++                        }
++                    }
++                }
++
+                     @Override
+                     public void onDebug() {
+                         // no-op
+diff --git a/services/core/java/com/android/server/wm/SystemGesturesPointerEventListener.java b/services/core/java/com/android/server/wm/SystemGesturesPointerEventListener.java
+index 658f4efbdb2fb..02d8c2a1413f6 100644
+--- a/services/core/java/com/android/server/wm/SystemGesturesPointerEventListener.java
++++ b/services/core/java/com/android/server/wm/SystemGesturesPointerEventListener.java
+@@ -80,6 +80,7 @@ class SystemGesturesPointerEventListener implements PointerEventListener {
+     private boolean mDebugFireable;
+     private boolean mMouseHoveringAtEdge;
+     private long mLastFlingTime;
++    private boolean mScrollFired;
+ 
+     SystemGesturesPointerEventListener(Context context, Handler handler, Callbacks callbacks) {
+         mContext = checkNull("context", context);
+@@ -172,6 +173,7 @@ public void onPointerEvent(MotionEvent event) {
+             case MotionEvent.ACTION_DOWN:
+                 mSwipeFireable = true;
+                 mDebugFireable = true;
++                mScrollFired = false;
+                 mDownPointers = 0;
+                 captureDown(event, 0);
+                 if (mMouseHoveringAtEdge) {
+@@ -228,6 +230,9 @@ public void onPointerEvent(MotionEvent event) {
+             case MotionEvent.ACTION_CANCEL:
+                 mSwipeFireable = false;
+                 mDebugFireable = false;
++                if (mScrollFired)
++                    mCallbacks.onScroll(false);
++                mScrollFired = false;
+                 mCallbacks.onUpOrCancel();
+                 break;
+             default:
+@@ -359,10 +364,25 @@ public boolean onFling(MotionEvent down, MotionEvent up,
+             if (duration > MAX_FLING_TIME_MILLIS) {
+                 duration = MAX_FLING_TIME_MILLIS;
+             }
++            if(Math.abs(velocityY) >= Math.abs(velocityX))
++                mCallbacks.onVerticalFling(duration);
++            else
++                mCallbacks.onHorizontalFling(duration);
++
+             mLastFlingTime = now;
+             mCallbacks.onFling(duration);
+             return true;
+         }
++
++        @Override
++        public boolean onScroll(MotionEvent e1, MotionEvent e2,
++                                   float distanceX, float distanceY) {
++           if (!mScrollFired) {
++               mCallbacks.onScroll(true);
++               mScrollFired = true;
++           }
++           return true;
++        }
+     }
+ 
+     interface Callbacks {
+@@ -371,6 +391,9 @@ interface Callbacks {
+         void onSwipeFromRight();
+         void onSwipeFromLeft();
+         void onFling(int durationMs);
++        void onVerticalFling(int durationMs);
++        void onHorizontalFling(int durationMs);
++        void onScroll(boolean started);
+         void onDown();
+         void onUpOrCancel();
+         void onMouseHoverAtTop();

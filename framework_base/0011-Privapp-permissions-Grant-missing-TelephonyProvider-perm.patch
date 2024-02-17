@@ -1,0 +1,27 @@
+From 85ffb2758dd784dd9786e0b9d94d29f2ffe065b2 Mon Sep 17 00:00:00 2001
+From: spezi77 <spezi7713@gmx.net>
+Date: Wed, 19 Jan 2022 19:52:45 +0900
+Subject: [PATCH] privapp-permissions: Grant missing TelephonyProvider perm.
+
+E DatabaseUtils: Writing exception to parcel
+E DatabaseUtils: java.lang.SecurityException: No permission to access APN settings
+E DatabaseUtils: at com.android.providers.telephony.TelephonyProvider.checkPermission(TelephonyProvider.java:4799)
+
+Signed-off-by: spezi77 <spezi7713@gmx.net>
+Change-Id: I648bcf6d3bff5672bd69e8b10782a0a1431b5f82
+---
+ data/etc/privapp-permissions-platform.xml | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/data/etc/privapp-permissions-platform.xml b/data/etc/privapp-permissions-platform.xml
+index 58a2073981bf..a9e850392d8e 100644
+--- a/data/etc/privapp-permissions-platform.xml
++++ b/data/etc/privapp-permissions-platform.xml
+@@ -205,6 +205,7 @@ applications that come with the platform
+         <permission name="android.permission.INTERACT_ACROSS_USERS"/>
+         <permission name="android.permission.MODIFY_PHONE_STATE"/>
+         <permission name="android.permission.USE_RESERVED_DISK"/>
++        <permission name="android.permission.WRITE_APN_SETTINGS"/>
+         <!-- Permissions required for reading and logging compat changes -->
+         <permission name="android.permission.LOG_COMPAT_CHANGE" />
+         <permission name="android.permission.READ_COMPAT_CHANGE_CONFIG" />
