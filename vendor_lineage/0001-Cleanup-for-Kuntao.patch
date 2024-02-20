@@ -1,0 +1,38 @@
+From b08431aef9e2ee3c7ac58bb2fc199f28d36314da Mon Sep 17 00:00:00 2001
+From: Murat Kozan <muratkozan350@gmail.com>
+Date: Mon, 12 Feb 2024 18:09:13 +0300
+Subject: [PATCH] Cleanup for Kuntao
+
+---
+ config/matrixx.mk | 11 -----------
+ 1 file changed, 11 deletions(-)
+
+diff --git a/config/matrixx.mk b/config/matrixx.mk
+index 982512bf..3f694372 100644
+--- a/config/matrixx.mk
++++ b/config/matrixx.mk
+@@ -3,9 +3,6 @@ PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
+     ro.error.receiver.system.apps=com.google.android.gms \
+     ro.atrace.core.services=com.google.android.gms,com.google.android.gms.ui,com.google.android.gms.persistent \
+     ro.com.google.ime.theme_id=5 \
+-    drm.service.enabled=true \
+-    media.mediadrmservice.enable=true \
+-    persist.sys.disable_rescue=true \
+     ro.opa.eligible_device=true \
+     ro.carriersetup.vzw_consent_page=true
+ 
+@@ -52,14 +49,6 @@ endif
+ PRODUCT_COPY_FILES += \
+     vendor/lineage/prebuilt/common/etc/sysconfig/preinstalled-packages-platform-crdroid-product.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/sysconfig/preinstalled-packages-platform-crdroid-product.xml
+ 
+-# Disable async MTE on system_server
+-PRODUCT_SYSTEM_EXT_PROPERTIES += \
+-    arm64.memtag.process.system_server=off
+-
+-# Enable dex2oat64 to do dexopt
+-PRODUCT_SYSTEM_EXT_PROPERTIES += \
+-    dalvik.vm.dex2oat64.enabled=true
+-
+ # Disable lockscreen live wallpaper for media metadata on lockscreen to work
+ PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
+     persist.wm.debug.lockscreen_live_wallpaper=false

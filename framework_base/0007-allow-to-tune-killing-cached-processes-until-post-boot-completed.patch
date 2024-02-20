@@ -1,0 +1,44 @@
+From 566a6e3c9061e1d475dbefb2bb7b199c5d5dcce5 Mon Sep 17 00:00:00 2001
+From: Yaroslav Zviezda <acroreiser@gmail.com>
+Date: Sun, 3 Dec 2023 01:46:06 +0300
+Subject: [PATCH] am: allow to tune killing cached processes until/post boot
+ completed
+
+By default Android applies background apps limits at 10 minutes after boot completion.
+This can lead to high memory pressure and bad lags due to thrashing.
+
+Here is a couple of system properties to tune this behavior on legacy devices:
+* ro.am.no_kill_cached_processes_until_boot_completed (true)
+* ro.am.no_kill_cached_processes_post_boot_completed_duration_millis (600_000)
+---
+ .../com/android/server/am/ActivityManagerConstants.java    | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/services/core/java/com/android/server/am/ActivityManagerConstants.java b/services/core/java/com/android/server/am/ActivityManagerConstants.java
+index de6522ea60ef9..3249a8488c681 100644
+--- a/services/core/java/com/android/server/am/ActivityManagerConstants.java
++++ b/services/core/java/com/android/server/am/ActivityManagerConstants.java
+@@ -36,6 +36,7 @@
+ import android.os.Message;
+ import android.os.PowerExemptionManager;
+ import android.os.SystemClock;
++import android.os.SystemProperties;
+ import android.provider.DeviceConfig;
+ import android.provider.DeviceConfig.OnPropertiesChangedListener;
+ import android.provider.DeviceConfig.Properties;
+@@ -844,11 +845,13 @@ final class ActivityManagerConstants extends ContentObserver {
+             "no_kill_cached_processes_post_boot_completed_duration_millis";
+ 
+     /** @see #mNoKillCachedProcessesUntilBootCompleted */
+-    private static final boolean DEFAULT_NO_KILL_CACHED_PROCESSES_UNTIL_BOOT_COMPLETED = true;
++    private static final boolean DEFAULT_NO_KILL_CACHED_PROCESSES_UNTIL_BOOT_COMPLETED =
++            SystemProperties.getBoolean("ro.am.no_kill_cached_processes_until_boot_completed", true);
+ 
+     /** @see #mNoKillCachedProcessesPostBootCompletedDurationMillis */
+     private static final long
+-            DEFAULT_NO_KILL_CACHED_PROCESSES_POST_BOOT_COMPLETED_DURATION_MILLIS = 600_000;
++            DEFAULT_NO_KILL_CACHED_PROCESSES_POST_BOOT_COMPLETED_DURATION_MILLIS =
++            SystemProperties.getLong("ro.am.no_kill_cached_processes_post_boot_completed_duration_millis", 600_000);
+ 
+     /**
+      * If true, do not kill excessive cached processes proactively, until user-0 is unlocked.

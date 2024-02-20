@@ -1,0 +1,58 @@
+From dd84427100aef142bf3f538bba451900862457ee Mon Sep 17 00:00:00 2001
+From: Astridxx <muratkozan350@gmail.com>
+Date: Wed, 14 Feb 2024 13:07:13 +0300
+Subject: [PATCH] config: Restore target_process_sdk_version_ovveride
+
+---
+ build/soong/Android.bp     | 17 +++++++++++++++++
+ config/BoardConfigSoong.mk |  2 ++
+ 2 files changed, 19 insertions(+)
+
+diff --git a/build/soong/Android.bp b/build/soong/Android.bp
+index a366e88d..d60fa89b 100644
+--- a/build/soong/Android.bp
++++ b/build/soong/Android.bp
+@@ -225,6 +225,23 @@ gralloc_handle_ubwcp_format {
+     },
+ }
+ 
++soong_config_module_type {
++    name: "target_process_sdk_version_overrides",
++    module_type: "cc_defaults",
++    config_namespace: "lineageGlobalVars",
++    value_variables: ["target_process_sdk_version_override"],
++    properties: ["cppflags"],
++}
++
++target_process_sdk_version_overrides {
++    name: "process_sdk_version_overrides_defaults",
++    soong_config_variables: {
++        target_process_sdk_version_override: {
++            cppflags: ["-DSDK_VERSION_OVERRIDES=\"%s\""],
++        },
++    },
++}
++
+ soong_config_module_type {
+     name: "target_shim_libs",
+     module_type: "cc_defaults",
+diff --git a/config/BoardConfigSoong.mk b/config/BoardConfigSoong.mk
+index b4728b9f..cbbc6acb 100644
+--- a/config/BoardConfigSoong.mk
++++ b/config/BoardConfigSoong.mk
+@@ -46,6 +46,7 @@ SOONG_CONFIG_lineageGlobalVars += \
+     target_health_charging_control_supports_toggle \
+     target_init_vendor_lib \
+     target_ld_shim_libs \
++    target_process_sdk_version_override \
+     target_surfaceflinger_udfps_lib \
+     target_trust_usb_control_path \
+     target_trust_usb_control_enable \
+@@ -124,6 +125,7 @@ SOONG_CONFIG_lineageGlobalVars_target_health_charging_control_supports_deadline
+ SOONG_CONFIG_lineageGlobalVars_target_health_charging_control_supports_toggle := $(TARGET_HEALTH_CHARGING_CONTROL_SUPPORTS_TOGGLE)
+ SOONG_CONFIG_lineageGlobalVars_target_init_vendor_lib := $(TARGET_INIT_VENDOR_LIB)
+ SOONG_CONFIG_lineageGlobalVars_target_ld_shim_libs := $(subst $(space),:,$(TARGET_LD_SHIM_LIBS))
++SOONG_CONFIG_lineageGlobalVars_target_process_sdk_version_override := $(TARGET_PROCESS_SDK_VERSION_OVERRIDE)
+ SOONG_CONFIG_lineageGlobalVars_target_surfaceflinger_udfps_lib := $(TARGET_SURFACEFLINGER_UDFPS_LIB)
+ SOONG_CONFIG_lineageGlobalVars_target_trust_usb_control_path := $(TARGET_TRUST_USB_CONTROL_PATH)
+ SOONG_CONFIG_lineageGlobalVars_target_trust_usb_control_enable := $(TARGET_TRUST_USB_CONTROL_ENABLE)

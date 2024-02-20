@@ -1,0 +1,50 @@
+From 4dc4ddfe8f98d6f7810420ddf2684af4ff75dbf9 Mon Sep 17 00:00:00 2001
+From: Murat Kozan <muratkozan350@gmail.com>
+Date: Mon, 5 Feb 2024 19:21:48 +0300
+Subject: [PATCH] Disable bandwidth control for BPF-less devices
+
+Fixes:
+
+IptablesRestoreController: iptables error:
+IptablesRestoreController: ------- COMMAND -------
+IptablesRestoreController: *filter
+IptablesRestoreController: :bw_costly_rmnet_data0 -
+IptablesRestoreController: -A bw_costly_rmnet_data0 -j bw_penalty_box
+IptablesRestoreController: -I bw_INPUT 2 -i rmnet_data0 -j bw_costly_rmnet_data0
+IptablesRestoreController: -I bw_OUTPUT 2 -o rmnet_data0 -j bw_costly_rmnet_data0
+IptablesRestoreController: -A bw_FORWARD -i rmnet_data0 -j bw_costly_rmnet_data0
+IptablesRestoreController: -A bw_FORWARD -o rmnet_data0 -j bw_costly_rmnet_data0
+IptablesRestoreController: -A bw_costly_rmnet_data0 -m quota2 ! --quota 9223372036854775807 --name rmnet_data0 -j REJECT
+IptablesRestoreController: COMMIT
+IptablesRestoreController: -------  ERROR -------
+IptablesRestoreController: ip6tables-restore: line 4 failed
+IptablesRestoreController: ----------------------
+BandwidthController: Failed set quota rule
+BandwidthController: No such iface rmnet_data0 to delete
+---
+ server/Controllers.cpp | 12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
+
+diff --git a/server/Controllers.cpp b/server/Controllers.cpp
+index 35e2b890..2dd1ae3c 100644
+--- a/server/Controllers.cpp
++++ b/server/Controllers.cpp
+@@ -277,16 +277,8 @@ void Controllers::init() {
+     initIptablesRules();
+     Stopwatch s;
+ 
+-    if (int ret = bandwidthCtrl.enableBandwidthControl()) {
+-        gLog.error("Failed to initialize BandwidthController (%s)", strerror(-ret));
+-        // A failure to init almost definitely means that iptables failed to load
+-        // our static ruleset, which then basically means network accounting will not work.
+-        // As such simply exit netd.  This may crash loop the system, but by failing
+-        // to bootup we will trigger rollback and thus this offers us protection against
+-        // a mainline update breaking things.
+-        // exit(1);
+-    }
+-    gLog.info("Enabling bandwidth control: %" PRId64 "us", s.getTimeAndResetUs());
++    bandwidthCtrl.disableBandwidthControl();
++    gLog.info("Disabling bandwidth control: %" PRId64 "us", s.getTimeAndResetUs());
+ 
+     if (int ret = RouteController::Init(NetworkController::LOCAL_NET_ID)) {
+         gLog.error("Failed to initialize RouteController (%s)", strerror(-ret));
