@@ -1,20 +1,24 @@
-From bd6f67456f0f623e97c375faf0781f4ad04ed034 Mon Sep 17 00:00:00 2001
+From 8d0e7b933c59cb8bf92b4b95bc9b7fa43244f99d Mon Sep 17 00:00:00 2001
 From: Pierre-Hugues Husson <phh@phh.me>
-Date: Sat, 3 Feb 2024 23:11:34 +0300
+Date: Thu, 29 Feb 2024 17:15:10 +0300
 Subject: [PATCH] Ignore cgroup creation errors
 
 For old kernels who don't have those modern cgroups
 ---
- core/jni/com_android_internal_os_Zygote.cpp               | 2 ++
+ core/jni/com_android_internal_os_Zygote.cpp               | 4 +++-
  services/core/java/com/android/server/am/ProcessList.java | 5 -----
- 2 files changed, 2 insertions(+), 5 deletions(-)
+ 2 files changed, 3 insertions(+), 6 deletions(-)
 
 diff --git a/core/jni/com_android_internal_os_Zygote.cpp b/core/jni/com_android_internal_os_Zygote.cpp
-index 9c40a28dfd81..bab3aa6e0a37 100644
+index b34b57a9de89..784daa293159 100644
 --- a/core/jni/com_android_internal_os_Zygote.cpp
 +++ b/core/jni/com_android_internal_os_Zygote.cpp
-@@ -1806,10 +1806,12 @@ static void SpecializeCommon(JNIEnv* env, uid_t uid, gid_t gid, jintArray gids,
-     if (!is_system_server && getuid() == 0) {
+@@ -1803,13 +1803,15 @@ static void SpecializeCommon(JNIEnv* env, uid_t uid, gid_t gid, jintArray gids,
+ 
+     // If this zygote isn't root, it won't be able to create a process group,
+     // since the directory is owned by root.
+-    if (getuid() == 0) {
++    if (!is_system_server && getuid() == 0) {
          const int rc = createProcessGroup(uid, getpid());
          if (rc != 0) {
 +#if 0
@@ -27,7 +31,7 @@ index 9c40a28dfd81..bab3aa6e0a37 100644
      }
  
 diff --git a/services/core/java/com/android/server/am/ProcessList.java b/services/core/java/com/android/server/am/ProcessList.java
-index 015ff179f28e..76d3d5e675c3 100644
+index c10589152a9b..433a966bcb87 100644
 --- a/services/core/java/com/android/server/am/ProcessList.java
 +++ b/services/core/java/com/android/server/am/ProcessList.java
 @@ -2434,14 +2434,9 @@ private Process.ProcessStartResult startProcess(HostingRecord hostingRecord, Str
