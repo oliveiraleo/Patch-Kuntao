@@ -1,4 +1,4 @@
-From f8e1f3e6f3b8c50934556b3ce62c55cb702b6b05 Mon Sep 17 00:00:00 2001
+From 054d91ca144ee0ff50e9657996637374686d7c18 Mon Sep 17 00:00:00 2001
 From: Pierre-Hugues Husson <phh@phh.me>
 Date: Wed, 26 Oct 2022 17:59:11 -0400
 Subject: [PATCH] Fix support for devices without cgroupv2 support

@@ -1,4 +1,4 @@
-From 3311f8471b5d3da4ed1b8a9496f4c104f9776111 Mon Sep 17 00:00:00 2001
+From 349978e2bc9ef3cf5c8d3dcfa1fca35457ed3df5 Mon Sep 17 00:00:00 2001
 From: Yaroslav Zviezda <acroreiser@gmail.com>
 Date: Tue, 28 Dec 2021 22:19:28 +0300
 Subject: [PATCH] Revert "libprocessgroup: switch freezer to cgroup v2"
@@ -41,7 +41,7 @@ index 7a10b2d25df5..f1b38b412edf 100644
    ],
    "Cgroups2": {
 diff --git a/libprocessgroup/profiles/task_profiles.json b/libprocessgroup/profiles/task_profiles.json
-index c16f77efb672..9ff9e5d53069 100644
+index 06b3bacf7007..8a89ea65b31c 100644
 --- a/libprocessgroup/profiles/task_profiles.json
 +++ b/libprocessgroup/profiles/task_profiles.json
 @@ -80,7 +80,7 @@
@@ -117,10 +117,10 @@ index c16f77efb672..9ff9e5d53069 100644
    ],
  
 diff --git a/rootdir/init.rc b/rootdir/init.rc
-index 42e16c251738..055ef8fd6f1e 100644
+index 5898752ed737..f903a7ffc0ec 100644
 --- a/rootdir/init.rc
 +++ b/rootdir/init.rc
-@@ -426,6 +426,16 @@ on init
+@@ -439,6 +439,16 @@ on init
      chmod 0664 /dev/cpuset/cgroup.procs
      chmod 0664 /dev/cpuset/camera-daemon/cgroup.procs
  

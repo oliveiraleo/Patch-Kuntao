@@ -1,4 +1,4 @@
-From 1ac16ad106c586f09217bc19b5dd11a4c08a4c18 Mon Sep 17 00:00:00 2001
+From 3018a00232b68a266f28023bb9f937405589828f Mon Sep 17 00:00:00 2001
 From: Astridxx <muratkozan350@gmail.com>
 Date: Mon, 12 Feb 2024 17:03:11 +0300
 Subject: [PATCH] init: Disable bootreceiver tracing instance for 3.18 kernel
@@ -8,10 +8,10 @@ Subject: [PATCH] init: Disable bootreceiver tracing instance for 3.18 kernel
  1 file changed, 2 insertions(+)
 
 diff --git a/rootdir/init.rc b/rootdir/init.rc
-index 055ef8fd6f1e..05235619f3e3 100644
+index f903a7ffc0ec..e21468ea02ba 100644
 --- a/rootdir/init.rc
 +++ b/rootdir/init.rc
-@@ -680,6 +680,8 @@ on late-fs
+@@ -693,6 +693,8 @@ on late-fs
      exec -- /system/bin/fsverity_init --load-verified-keys
  
  # Only enable the bootreceiver tracing instance for kernels 5.10 and above.

@@ -1,4 +1,4 @@
-From e3f31ce4b3f268ab5ce138b6f089d486ade93233 Mon Sep 17 00:00:00 2001
+From 5631c3e6ac4d856a129400a76946bb70b676cd73 Mon Sep 17 00:00:00 2001
 From: Astridxx <muratkozan350@gmail.com>
 Date: Mon, 12 Feb 2024 17:07:52 +0300
 Subject: [PATCH] init: Don't enable f2fs iostat by default
@@ -8,10 +8,10 @@ Subject: [PATCH] init: Don't enable f2fs iostat by default
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/rootdir/init.rc b/rootdir/init.rc
-index 05235619f3e3..7d14891d770b 100644
+index e21468ea02ba..74f16bda3521 100644
 --- a/rootdir/init.rc
 +++ b/rootdir/init.rc
-@@ -1166,7 +1166,7 @@ on boot
+@@ -1179,7 +1179,7 @@ on boot
      write /dev/sys/fs/by-name/userdata/cp_interval 200
      write /dev/sys/fs/by-name/userdata/gc_urgent_sleep_time 50
      write /dev/sys/fs/by-name/userdata/iostat_period_ms 1000
