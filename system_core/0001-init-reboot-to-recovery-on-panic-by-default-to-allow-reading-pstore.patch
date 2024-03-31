@@ -1,0 +1,23 @@
+From 5e93b3e222cac8eb58bc44ebc10f68dd07fd8c9f Mon Sep 17 00:00:00 2001
+From: Murat Kozan <muratkozan350@gmail.com>
+Date: Fri, 24 Feb 2023 21:30:17 +0300
+Subject: [PATCH] init: reboot to recovery on panic by default to allow reading
+ pstore
+
+---
+ init/reboot_utils.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/init/reboot_utils.cpp b/init/reboot_utils.cpp
+index b3fa9fd3bac0..a06538639f14 100644
+--- a/init/reboot_utils.cpp
++++ b/init/reboot_utils.cpp
+@@ -36,7 +36,7 @@
+ namespace android {
+ namespace init {
+ 
+-static std::string init_fatal_reboot_target = "bootloader";
++static std::string init_fatal_reboot_target = "recovery";
+ static bool init_fatal_panic = false;
+ 
+ // this needs to read the /proc/* files directly because it is called before

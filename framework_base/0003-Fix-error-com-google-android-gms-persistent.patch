@@ -1,0 +1,20 @@
+From 3847e4a422e36a87e11b7f7a5a091f8797cd7b3d Mon Sep 17 00:00:00 2001
+From: Murat Kozan <muratkozan350@gmail.com>
+Date: Fri, 24 Feb 2023 22:14:14 +0300
+Subject: [PATCH] fix error com.google.android.gms.persistent
+
+---
+ data/etc/platform.xml | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/data/etc/platform.xml b/data/etc/platform.xml
+index 0b8dc3fe0dece..829d24b5decc9 100644
+--- a/data/etc/platform.xml
++++ b/data/etc/platform.xml
+@@ -297,4 +297,6 @@
+ 
+     <!-- Allow IMS service entitlement app to schedule jobs to run when app in background. -->
+     <allow-in-power-save-except-idle package="com.android.imsserviceentitlement" />
++
++    <allow-in-power-save package="com.google.android.gms"/>
+ </permissions>

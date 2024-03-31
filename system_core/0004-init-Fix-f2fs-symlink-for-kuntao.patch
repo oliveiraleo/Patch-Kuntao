@@ -1,0 +1,27 @@
+From f29172473a6eccc156d2cce0d63f11b41398f17c Mon Sep 17 00:00:00 2001
+From: Murat Kozan <muratkozan350@gmail.com>
+Date: Fri, 24 Feb 2023 21:35:15 +0300
+Subject: [PATCH] init: Fix f2fs symlink for kuntao
+
+---
+ rootdir/init.rc | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/rootdir/init.rc b/rootdir/init.rc
+index 30514b7665b5..ac817a866a97 100644
+--- a/rootdir/init.rc
++++ b/rootdir/init.rc
+@@ -1072,11 +1072,11 @@ on boot
+ 
+     # to access F2FS sysfs on dm-<num> directly
+     mkdir /dev/sys/fs/by-name 0755 system system
+-    symlink /sys/fs/f2fs/${dev.mnt.blk.data} /dev/sys/fs/by-name/userdata
++    symlink /sys/fs/f2fs/dm-0 /dev/sys/fs/by-name/userdata
+ 
+     # to access dm-<num> sysfs
+     mkdir /dev/sys/block/by-name 0755 system system
+-    symlink /sys/devices/virtual/block/${dev.mnt.blk.data} /dev/sys/block/by-name/userdata
++    symlink /sys/devices/virtual/block/dm-0 /dev/sys/block/by-name/userdata
+ 
+     # F2FS tuning. Set cp_interval larger than dirty_expire_centisecs, 30 secs,
+     # to avoid power consumption when system becomes mostly idle. Be careful

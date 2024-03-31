@@ -1,0 +1,57 @@
+From 6a31d84afbb714adac7b233857d86ce5942c1af8 Mon Sep 17 00:00:00 2001
+From: Murat Kozan <muratkozan350@gmail.com>
+Date: Sun, 31 Mar 2024 09:02:46 +0300
+Subject: [PATCH] Update AttestationHooks
+
+---
+ .../internal/gmscompat/AttestationHooks.java    | 17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
+
+diff --git a/core/java/com/android/internal/gmscompat/AttestationHooks.java b/core/java/com/android/internal/gmscompat/AttestationHooks.java
+index 78754d28e6bb..bac112a3916f 100644
+--- a/core/java/com/android/internal/gmscompat/AttestationHooks.java
++++ b/core/java/com/android/internal/gmscompat/AttestationHooks.java
+@@ -28,12 +28,15 @@
+ public final class AttestationHooks {
+     private static final String TAG = "GmsCompat/Attestation";
+ 
++    private static final String PACKAGE_GMS = "com.google.android.gms";
++    private static final String PACKAGE_FINSKY = "com.android.vending";
+     private static final String PROCESS_UNSTABLE = "com.google.android.gms.unstable";
+ 
+     private static final String PRODUCT_STOCK_FINGERPRINT =
+-            SystemProperties.get("ro.build.stock_fingerprint");
++            SystemProperties.get("ro.build.gms_fingerprint");
+ 
+     private static volatile boolean sIsGms = false;
++    private static volatile boolean sIsFinsky = false;
+ 
+     private AttestationHooks() { }
+ 
+@@ -69,17 +72,23 @@ public static void initApplicationBeforeOnCreate(Application app) {
+             sIsGms = true;
+             spoofBuildGms();
+         }
++
++        if (PACKAGE_FINSKY.equals(app.getPackageName())) {
++            sIsFinsky = true;
++        }
+     }
+ 
+     private static boolean isCallerSafetyNet() {
+-        return Arrays.stream(Thread.currentThread().getStackTrace())
++        return sIsGms && Arrays.stream(Thread.currentThread().getStackTrace())
+                 .anyMatch(elem -> elem.getClassName().contains("DroidGuard"));
+     }
+ 
+     public static void onEngineGetCertificateChain() {
+-        // Check stack for SafetyNet
+-        if (sIsGms && isCallerSafetyNet()) {
++        // Check stack for SafetyNet or Play Integrity
++        if (isCallerSafetyNet() || sIsFinsky) {
++            Log.i(TAG, "Blocked key attestation sIsGms=" + sIsGms + " sIsFinsky=" + sIsFinsky);
+             throw new UnsupportedOperationException();
+         }
+     }
+ }
++
