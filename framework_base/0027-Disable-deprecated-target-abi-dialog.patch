@@ -1,0 +1,22 @@
+From d4bd73893a0fe7f74a7624b4f1c66ceddb092def Mon Sep 17 00:00:00 2001
+From: z3DD3r <z3dd3r@gmail.com>
+Date: Sun, 24 Mar 2024 23:17:41 +0300
+Subject: [PATCH] Disable deprecated target/abi dialog
+
+---
+ services/core/java/com/android/server/wm/AppWarnings.java | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/services/core/java/com/android/server/wm/AppWarnings.java b/services/core/java/com/android/server/wm/AppWarnings.java
+index ad5f4427fbc45..f7cb41fb049d8 100644
+--- a/services/core/java/com/android/server/wm/AppWarnings.java
++++ b/services/core/java/com/android/server/wm/AppWarnings.java
+@@ -210,8 +210,6 @@ public void showDeprecatedAbiDialogIfNeeded(ActivityRecord r) {
+     public void onStartActivity(ActivityRecord r) {
+         showUnsupportedCompileSdkDialogIfNeeded(r);
+         showUnsupportedDisplaySizeDialogIfNeeded(r);
+-        showDeprecatedTargetDialogIfNeeded(r);
+-        showDeprecatedAbiDialogIfNeeded(r);
+     }
+ 
+     /*

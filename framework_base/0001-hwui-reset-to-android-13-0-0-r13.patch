@@ -1,27 +1,25 @@
-From 5650f2f39667e91e303e7e907e1d0e879d7d3bfe Mon Sep 17 00:00:00 2001
+From 00f2738c3bab49d25f32eec96d004015bcc718fd Mon Sep 17 00:00:00 2001
 From: Yaroslav Zviezda <acroreiser@gmail.com>
-Date: Thu, 22 Dec 2022 13:28:58 +0300
+Date: Sat, 6 Apr 2024 13:39:23 +0300
 Subject: [PATCH] hwui: port "hwui: reset to android-13.0.0_r13" to 14
 
 * fixes GPU page faults on legacy Adreno 3xx
-
-Change-Id: I54cc1b6a2cf355a465351f7344f2d24247cc187d
 ---
  libs/hwui/FrameInfoVisualizer.cpp             |  2 +-
  libs/hwui/JankTracker.cpp                     |  5 +-
  libs/hwui/Readback.cpp                        | 35 ++--------
  libs/hwui/jni/android_graphics_Canvas.cpp     | 28 ++------
- .../hwui/pipeline/skia/SkiaOpenGLPipeline.cpp | 16 +----
+ .../hwui/pipeline/skia/SkiaOpenGLPipeline.cpp | 15 +----
  libs/hwui/pipeline/skia/SkiaOpenGLPipeline.h  |  3 +-
  .../hwui/pipeline/skia/SkiaVulkanPipeline.cpp | 15 +----
  libs/hwui/pipeline/skia/SkiaVulkanPipeline.h  |  1 -
  libs/hwui/renderthread/CanvasContext.cpp      | 18 ++---
  libs/hwui/tests/unit/JankTrackerTests.cpp     | 65 -------------------
  libs/hwui/tests/unit/SkiaPipelineTests.cpp    |  4 +-
- 11 files changed, 26 insertions(+), 166 deletions(-)
+ 11 files changed, 26 insertions(+), 165 deletions(-)
 
 diff --git a/libs/hwui/FrameInfoVisualizer.cpp b/libs/hwui/FrameInfoVisualizer.cpp
-index 687e4dd324d30..3a8e559f6d7ea 100644
+index 59f21694fb773..07112f6eb0a06 100644
 --- a/libs/hwui/FrameInfoVisualizer.cpp
 +++ b/libs/hwui/FrameInfoVisualizer.cpp
 @@ -179,7 +179,7 @@ void FrameInfoVisualizer::initializeRects(const int baseline, const int width) {
@@ -31,7 +29,7 @@ index 687e4dd324d30..3a8e559f6d7ea 100644
 -
 +    ;
      for (size_t fi = 0; fi < mFrameSource.size(); fi++) {
-         if (mFrameSource[fi][FrameInfoIndex::Flags] & FrameInfoFlags::SkippedFrame) {
+         if (mFrameSource[fi].getSkippedFrameReason()) {
              continue;
 diff --git a/libs/hwui/JankTracker.cpp b/libs/hwui/JankTracker.cpp
 index 4b0ddd2fa2eff..1e5be6c3eed7a 100644
@@ -50,10 +48,10 @@ index 4b0ddd2fa2eff..1e5be6c3eed7a 100644
  
      // If we hit the deadline, cool!
 diff --git a/libs/hwui/Readback.cpp b/libs/hwui/Readback.cpp
-index 045de35c1d97a..623fd0d20858c 100644
+index afe4c3896ed2f..029b8eedd6d2b 100644
 --- a/libs/hwui/Readback.cpp
 +++ b/libs/hwui/Readback.cpp
-@@ -118,36 +118,11 @@ void Readback::copySurfaceInto(ANativeWindow* window, const std::shared_ptr<Copy
+@@ -121,36 +121,11 @@ void Readback::copySurfaceInto(ANativeWindow* window, const std::shared_ptr<Copy
  
      SkRect srcRect = request->srcRect.toSkRect();
  
@@ -94,7 +92,7 @@ index 045de35c1d97a..623fd0d20858c 100644
      ALOGV("imageSrcRect = " RECT_STRING, SK_RECT_ARGS(imageSrcRect));
  
      // Represents the "logical" width/height of the texture. That is, the dimensions of the buffer
-@@ -209,7 +184,7 @@ void Readback::copySurfaceInto(ANativeWindow* window, const std::shared_ptr<Copy
+@@ -212,7 +187,7 @@ void Readback::copySurfaceInto(ANativeWindow* window, const std::shared_ptr<Copy
       */
  
      SkMatrix m;
@@ -144,10 +142,10 @@ index 8ba750372d181..4e7ee7621c740 100644
  
  static void drawMesh(JNIEnv* env, jobject, jlong canvasHandle, jlong meshHandle, jint modeHandle,
 diff --git a/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp b/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp
-index c4d3f5cedfa8e..2f972fc83ff4b 100644
+index c5ffbb70213ef..e38833c049cc5 100644
 --- a/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp
 +++ b/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp
-@@ -55,14 +55,8 @@ SkiaOpenGLPipeline::~SkiaOpenGLPipeline() {
+@@ -58,14 +58,8 @@ SkiaOpenGLPipeline::~SkiaOpenGLPipeline() {
  MakeCurrentResult SkiaOpenGLPipeline::makeCurrent() {
      bool wasSurfaceless = mEglManager.isCurrent(EGL_NO_SURFACE);
  
@@ -164,7 +162,7 @@ index c4d3f5cedfa8e..2f972fc83ff4b 100644
      EGLint error = 0;
      if (!mEglManager.makeCurrent(mEglSurface, &error)) {
          return MakeCurrentResult::AlreadyCurrent;
-@@ -223,9 +217,6 @@ void SkiaOpenGLPipeline::onStop() {
+@@ -231,9 +225,6 @@ void SkiaOpenGLPipeline::onStop() {
  }
  
  bool SkiaOpenGLPipeline::setSurface(ANativeWindow* surface, SwapBehavior swapBehavior) {
@@ -174,21 +172,20 @@ index c4d3f5cedfa8e..2f972fc83ff4b 100644
      if (mEglSurface != EGL_NO_SURFACE) {
          mEglManager.destroySurface(mEglSurface);
          mEglSurface = EGL_NO_SURFACE;
-@@ -242,8 +233,7 @@ bool SkiaOpenGLPipeline::setSurface(ANativeWindow* surface, SwapBehavior swapBeh
+@@ -250,7 +241,7 @@ bool SkiaOpenGLPipeline::setSurface(ANativeWindow* surface, SwapBehavior swapBeh
  
      if (mEglSurface != EGL_NO_SURFACE) {
          const bool preserveBuffer = (swapBehavior != SwapBehavior::kSwap_discardBuffer);
--        const bool isPreserved = mEglManager.setPreserveBuffer(mEglSurface, preserveBuffer);
--        ALOGE_IF(preserveBuffer != isPreserved, "Unable to match the desired swap behavior.");
+-        mEglManager.setPreserveBuffer(mEglSurface, preserveBuffer);
 +        mBufferPreserved = mEglManager.setPreserveBuffer(mEglSurface, preserveBuffer);
          return true;
      }
  
 diff --git a/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.h b/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.h
-index f0461bef170c5..dcc4c8e50ac3d 100644
+index 098a74655831e..e058d355661f6 100644
 --- a/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.h
 +++ b/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.h
-@@ -69,8 +69,7 @@ class SkiaOpenGLPipeline : public SkiaPipeline, public IGpuContextCallback {
+@@ -70,8 +70,7 @@ class SkiaOpenGLPipeline : public SkiaPipeline, public IGpuContextCallback {
  private:
      renderthread::EglManager& mEglManager;
      EGLSurface mEglSurface = EGL_NO_SURFACE;
@@ -199,7 +196,7 @@ index f0461bef170c5..dcc4c8e50ac3d 100644
  
  } /* namespace skiapipeline */
 diff --git a/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp b/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp
-index 86096d5bd01c6..a3451b89ef04c 100644
+index d74748936d15b..864f86127e8f4 100644
 --- a/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp
 +++ b/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp
 @@ -55,14 +55,7 @@ VulkanManager& SkiaVulkanPipeline::vulkanManager() {
@@ -218,7 +215,7 @@ index 86096d5bd01c6..a3451b89ef04c 100644
  }
  
  Frame SkiaVulkanPipeline::getFrame() {
-@@ -158,11 +151,7 @@ void SkiaVulkanPipeline::onStop() {}
+@@ -159,11 +152,7 @@ void SkiaVulkanPipeline::onStop() {}
      return android::base::unique_fd(fence);
  }
  
@@ -232,10 +229,10 @@ index 86096d5bd01c6..a3451b89ef04c 100644
          vulkanManager().destroySurface(mVkSurface);
          mVkSurface = nullptr;
 diff --git a/libs/hwui/pipeline/skia/SkiaVulkanPipeline.h b/libs/hwui/pipeline/skia/SkiaVulkanPipeline.h
-index 284cde537ec08..cc4e41762544f 100644
+index e2ea57d32cd54..214e1194d7097 100644
 --- a/libs/hwui/pipeline/skia/SkiaVulkanPipeline.h
 +++ b/libs/hwui/pipeline/skia/SkiaVulkanPipeline.h
-@@ -66,7 +66,6 @@ class SkiaVulkanPipeline : public SkiaPipeline, public IGpuContextCallback {
+@@ -67,7 +67,6 @@ class SkiaVulkanPipeline : public SkiaPipeline, public IGpuContextCallback {
  private:
      renderthread::VulkanManager& vulkanManager();
      renderthread::VulkanSurface* mVkSurface = nullptr;
@@ -244,10 +241,10 @@ index 284cde537ec08..cc4e41762544f 100644
  
  } /* namespace skiapipeline */
 diff --git a/libs/hwui/renderthread/CanvasContext.cpp b/libs/hwui/renderthread/CanvasContext.cpp
-index f5b3ca602469b..ec0ac0629300a 100644
+index 56b52dc2abe76..bb52af71b82be 100644
 --- a/libs/hwui/renderthread/CanvasContext.cpp
 +++ b/libs/hwui/renderthread/CanvasContext.cpp
-@@ -588,19 +588,9 @@ void CanvasContext::draw(bool solelyTextureViewUpdates) {
+@@ -621,19 +621,9 @@ void CanvasContext::draw(bool solelyTextureViewUpdates) {
  
      ATRACE_FORMAT("Drawing " RECT_STRING, SK_RECT_ARGS(dirty));
  
@@ -270,7 +267,7 @@ index f5b3ca602469b..ec0ac0629300a 100644
  
      uint64_t frameCompleteNr = getFrameNumber();
  
-@@ -853,11 +843,11 @@ void CanvasContext::onSurfaceStatsAvailable(void* context, int32_t surfaceContro
+@@ -886,11 +876,11 @@ void CanvasContext::onSurfaceStatsAvailable(void* context, int32_t surfaceContro
      FrameInfo* frameInfo = instance->getFrameInfoFromLast4(frameNumber, surfaceControlId);
  
      if (frameInfo != nullptr) {
@@ -357,10 +354,10 @@ index b67e419e7d4ac..5b397de36a869 100644
 -    ASSERT_EQ(2, container.get()->jankFrameCount());
 -}
 diff --git a/libs/hwui/tests/unit/SkiaPipelineTests.cpp b/libs/hwui/tests/unit/SkiaPipelineTests.cpp
-index 4d0595e03da61..ce06fe212bbb6 100644
+index 3ded540c31524..1dcc3543e228e 100644
 --- a/libs/hwui/tests/unit/SkiaPipelineTests.cpp
 +++ b/libs/hwui/tests/unit/SkiaPipelineTests.cpp
-@@ -405,9 +405,7 @@ RENDERTHREAD_SKIA_PIPELINE_TEST(SkiaPipeline, context_lost) {
+@@ -405,9 +405,7 @@ RENDERTHREAD_TEST(SkiaPipeline, context_lost) {
      EXPECT_TRUE(pipeline->isSurfaceReady());
      renderThread.destroyRenderingContext();
      EXPECT_FALSE(pipeline->isSurfaceReady());
@@ -370,4 +367,4 @@ index 4d0595e03da61..ce06fe212bbb6 100644
 +    LOG_ALWAYS_FATAL_IF(pipeline->isSurfaceReady());
  }
  
- RENDERTHREAD_SKIA_PIPELINE_TEST(SkiaPipeline, pictureCallback) {
+ RENDERTHREAD_TEST(SkiaPipeline, pictureCallback) {

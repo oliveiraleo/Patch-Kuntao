@@ -1,4 +1,4 @@
-From c6022cb6a33d53ceea445ada1dc80dcb0a3e46e7 Mon Sep 17 00:00:00 2001
+From 74453153f43a4aea704cab722dd6d6be459a88a8 Mon Sep 17 00:00:00 2001
 From: Jun Wang <quic_junwan@quicinc.com>
 Date: Fri, 19 May 2023 13:43:22 +0800
 Subject: [PATCH] Optimize AbsListView to reduce click operation latency
@@ -16,10 +16,10 @@ Signed-off-by: Pranav Vashi <neobuddy89@gmail.com>
  1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/core/java/android/widget/AbsListView.java b/core/java/android/widget/AbsListView.java
-index 6ad1960cbda9..c80da9c39564 100644
+index 1fdd1a5a5a5f4..13767ec8352ee 100644
 --- a/core/java/android/widget/AbsListView.java
 +++ b/core/java/android/widget/AbsListView.java
-@@ -4229,6 +4229,10 @@ private void onTouchUp(MotionEvent ev) {
+@@ -4235,6 +4235,10 @@ private void onTouchUp(MotionEvent ev) {
                                      }
                                      mSelector.setHotspot(x, ev.getY());
                                  }
@@ -30,7 +30,7 @@ index 6ad1960cbda9..c80da9c39564 100644
                                  if (mTouchModeReset != null) {
                                      removeCallbacks(mTouchModeReset);
                                  }
-@@ -4239,10 +4243,6 @@ public void run() {
+@@ -4245,10 +4249,6 @@ public void run() {
                                          mTouchMode = TOUCH_MODE_REST;
                                          child.setPressed(false);
                                          setPressed(false);

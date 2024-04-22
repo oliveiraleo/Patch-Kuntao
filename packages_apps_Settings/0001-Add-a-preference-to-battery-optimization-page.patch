@@ -1,6 +1,6 @@
-From 3c86f1061afbd6bbd7d86e9f38241f657bfac729 Mon Sep 17 00:00:00 2001
+From 09a492df740be659b0c02f6b3a1693a62b584538 Mon Sep 17 00:00:00 2001
 From: Murat Kozan <muratkozan350@gmail.com>
-Date: Thu, 8 Feb 2024 07:28:25 +0300
+Date: Mon, 8 Apr 2024 14:04:33 +0300
 Subject: [PATCH] Settings: Add a preference to battery optimization page
 
 * rather than going to apps one by one, this preference allows users to open the page where it'll list all apps with filters and stuff.
@@ -9,7 +9,7 @@ Subject: [PATCH] Settings: Add a preference to battery optimization page
  1 file changed, 6 insertions(+)
 
 diff --git a/res/xml/power_usage_summary.xml b/res/xml/power_usage_summary.xml
-index b791f128598..962984651f6 100644
+index 25255f84775..690fe0de85b 100644
 --- a/res/xml/power_usage_summary.xml
 +++ b/res/xml/power_usage_summary.xml
 @@ -51,6 +51,12 @@

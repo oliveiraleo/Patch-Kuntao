@@ -1,4 +1,4 @@
-From 872277e89874d3abce6ffb940276b3ac04e25584 Mon Sep 17 00:00:00 2001
+From 694e261caee7ef4db431b01cc1c361aec0a5d9e4 Mon Sep 17 00:00:00 2001
 From: Pierre-Hugues Husson <phh@phh.me>
 Date: Wed, 26 Oct 2022 18:11:10 -0400
 Subject: [PATCH] Dont delete UID from BpfMap on BPF-less kernel
@@ -9,10 +9,10 @@ Change-Id: I93b5b8237f6655cb47e0b0584c54cad73a51e7b2
  1 file changed, 1 insertion(+)
 
 diff --git a/service-t/src/com/android/server/net/NetworkStatsService.java b/service-t/src/com/android/server/net/NetworkStatsService.java
-index f977a2724c..877f351b5f 100644
+index 2c9f30c8f7..40c214ed96 100644
 --- a/service-t/src/com/android/server/net/NetworkStatsService.java
 +++ b/service-t/src/com/android/server/net/NetworkStatsService.java
-@@ -2498,6 +2498,7 @@ private <K extends StatsMapKey, V extends StatsMapValue> void deleteStatsMapTagD
+@@ -2450,6 +2450,7 @@ private <K extends StatsMapKey, V extends StatsMapValue> void deleteStatsMapTagD
       * @param uid
       */
      private void deleteKernelTagData(int uid) {

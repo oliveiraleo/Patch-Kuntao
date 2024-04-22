@@ -1,11 +1,10 @@
-From d4469a2c0c9b73bc08289f6334c05fdbc0f7cdad Mon Sep 17 00:00:00 2001
+From 144dde922ad95930058be80c38939f2aeb3f16f9 Mon Sep 17 00:00:00 2001
 From: jhonboy121 <alfredmathew05@gmail.com>
 Date: Tue, 15 Mar 2022 18:55:35 +0530
 Subject: [PATCH] Launcher3: Show clear all button in recents overview
 
+Change-Id: Id0b7c78d12437947b8e5aa0745f2acf5ae43b39a
 Signed-off-by: jhonboy121 <alfredmathew05@gmail.com>
-Signed-off-by: Pranav Vashi <neobuddy89@gmail.com>
-Change-Id: I0ca84035a1ddbecee70f2b4c788cbf3c2d25badd
 ---
  quickstep/res/drawable/ic_clear_all.xml       | 24 +++++++++++++++++++
  .../res/layout/overview_actions_container.xml | 14 +++++++++++
@@ -74,7 +73,7 @@ index 0fda0bf8d45..fa50f0644d2 100644
              android:id="@+id/oav_three_button_space"
              android:layout_width="0dp"
 diff --git a/quickstep/src/com/android/launcher3/uioverrides/states/OverviewModalTaskState.java b/quickstep/src/com/android/launcher3/uioverrides/states/OverviewModalTaskState.java
-index b9221eef9da..92a26d8685b 100644
+index 1d55da325eb..be50b2cd668 100644
 --- a/quickstep/src/com/android/launcher3/uioverrides/states/OverviewModalTaskState.java
 +++ b/quickstep/src/com/android/launcher3/uioverrides/states/OverviewModalTaskState.java
 @@ -46,7 +46,7 @@ public int getTransitionDuration(Context launcher, boolean isToState) {
@@ -100,10 +99,10 @@ index 396d0abeb07..c79e075d77b 100644
          boolean showFloatingSearch;
          if (dp.isPhone) {
 diff --git a/quickstep/src/com/android/quickstep/TaskOverlayFactory.java b/quickstep/src/com/android/quickstep/TaskOverlayFactory.java
-index 076f4b1f01c..b541d3ef52f 100644
+index 312cdc97a58..90a81598f50 100644
 --- a/quickstep/src/com/android/quickstep/TaskOverlayFactory.java
 +++ b/quickstep/src/com/android/quickstep/TaskOverlayFactory.java
-@@ -213,6 +213,11 @@ private void enterSplitSelect() {
+@@ -217,6 +217,11 @@ private void enterSplitSelect() {
              overviewPanel.initiateSplitSelect(mThumbnailView.getTaskView());
          }
  
@@ -115,7 +114,7 @@ index 076f4b1f01c..b541d3ef52f 100644
          /**
           * Called when the overlay is no longer used.
           */
-@@ -325,6 +330,11 @@ public void onScreenshot() {
+@@ -329,6 +334,11 @@ public void onScreenshot() {
              public void onSplit() {
                  endLiveTileMode(TaskOverlay.this::enterSplitSelect);
              }
@@ -127,7 +126,7 @@ index 076f4b1f01c..b541d3ef52f 100644
          }
      }
  
-@@ -338,5 +348,7 @@ public interface OverlayUICallbacks {
+@@ -342,5 +352,7 @@ public interface OverlayUICallbacks {
  
          /** User wants to start split screen with current app. */
          void onSplit();
@@ -149,7 +148,7 @@ index 8b5f091e11e..601021b5bfa 100644
  
      /**
 diff --git a/quickstep/src/com/android/quickstep/views/OverviewActionsView.java b/quickstep/src/com/android/quickstep/views/OverviewActionsView.java
-index b31791a9a0e..a7978f083e4 100644
+index b5490585874..d0c33bbc737 100644
 --- a/quickstep/src/com/android/quickstep/views/OverviewActionsView.java
 +++ b/quickstep/src/com/android/quickstep/views/OverviewActionsView.java
 @@ -136,6 +136,7 @@ protected void onFinishInflate() {
@@ -170,10 +169,10 @@ index b31791a9a0e..a7978f083e4 100644
      }
  
 diff --git a/quickstep/src/com/android/quickstep/views/RecentsView.java b/quickstep/src/com/android/quickstep/views/RecentsView.java
-index 87e8804c045..23fcbea42f2 100644
+index 9d4c3fb3d2d..08ec0398a71 100644
 --- a/quickstep/src/com/android/quickstep/views/RecentsView.java
 +++ b/quickstep/src/com/android/quickstep/views/RecentsView.java
-@@ -4124,6 +4124,10 @@ private void dismissAllTasks(View view) {
+@@ -4157,6 +4157,10 @@ private void dismissAllTasks(View view) {
          mActivity.getStatsLogManager().logger().log(LAUNCHER_TASK_CLEAR_ALL);
      }
  

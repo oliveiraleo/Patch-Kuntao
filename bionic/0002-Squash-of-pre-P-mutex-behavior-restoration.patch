@@ -1,4 +1,4 @@
-From d2413214fcf426246f7cc1612fed03ff713b1a0f Mon Sep 17 00:00:00 2001
+From c0d005a5934371d52ddc6524349660231d91052b Mon Sep 17 00:00:00 2001
 From: Ethan Chen <intervigil@gmail.com>
 Date: Tue, 25 Sep 2018 00:11:05 -0700
 Subject: [PATCH] bionic: Squash of pre-P mutex behavior restoration

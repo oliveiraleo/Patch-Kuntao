@@ -1,0 +1,26 @@
+From 505e8ca68be17569c23f39a67c3a04a92ffd83fa Mon Sep 17 00:00:00 2001
+From: Dmitry Gruzd <z3dd3r@gmail.com>
+Date: Sat, 6 Apr 2024 17:28:43 +0300
+Subject: [PATCH] fixup! hwui: port "hwui: reset to android-13.0.0_r13" to 14
+
+---
+ libs/hwui/renderthread/CanvasContext.cpp | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/libs/hwui/renderthread/CanvasContext.cpp b/libs/hwui/renderthread/CanvasContext.cpp
+index bb52af71b82be..a98447b0c84f3 100644
+--- a/libs/hwui/renderthread/CanvasContext.cpp
++++ b/libs/hwui/renderthread/CanvasContext.cpp
+@@ -621,9 +621,9 @@ void CanvasContext::draw(bool solelyTextureViewUpdates) {
+ 
+     ATRACE_FORMAT("Drawing " RECT_STRING, SK_RECT_ARGS(dirty));
+ 
+-    const auto drawResult = mRenderPipeline->draw(frame, windowDirty, dirty, mLightGeometry,
+-                                                  &mLayerUpdateQueue, mContentDrawBounds, mOpaque,
+-                                                  mLightInfo, mRenderNodes, &(profiler()), mBufferParams);
++    auto drawResult = mRenderPipeline->draw(frame, windowDirty, dirty, mLightGeometry,
++                                            &mLayerUpdateQueue, mContentDrawBounds, mOpaque,
++                                            mLightInfo, mRenderNodes, &(profiler()), mBufferParams);
+ 
+     uint64_t frameCompleteNr = getFrameNumber();
+ 

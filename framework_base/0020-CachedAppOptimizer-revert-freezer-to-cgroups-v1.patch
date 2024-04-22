@@ -1,0 +1,128 @@
+From e57e94645154ce53c90d62ce5b98b73f38562395 Mon Sep 17 00:00:00 2001
+From: Yaroslav Zviezda <acroreiser@gmail.com>
+Date: Sat, 6 Apr 2024 13:11:10 +0300
+Subject: [PATCH] CachedAppOptimizer: revert freezer to cgroups v1
+
+---
+ .../android/server/am/CachedAppOptimizer.java | 30 ++++++++++---------
+ ...m_android_server_am_CachedAppOptimizer.cpp | 30 +++++++++++--------
+ 2 files changed, 33 insertions(+), 27 deletions(-)
+
+diff --git a/services/core/java/com/android/server/am/CachedAppOptimizer.java b/services/core/java/com/android/server/am/CachedAppOptimizer.java
+index d0ab287785e32..6769442ecdd90 100644
+--- a/services/core/java/com/android/server/am/CachedAppOptimizer.java
++++ b/services/core/java/com/android/server/am/CachedAppOptimizer.java
+@@ -1045,6 +1045,18 @@ public synchronized boolean enableFreezer(boolean enable) {
+         return true;
+     }
+ 
++    /**
++     * Enable or disable the freezer. When enable == false all frozen processes are unfrozen,
++     * but aren't removed from the freezer. While in this state, processes can be added or removed
++     * by using Process.setProcessFrozen(), but they wouldn't be actually frozen until the freezer
++     * is enabled. If enable == true all processes in the freezer are frozen.
++     *
++     * @param enable Specify whether to enable (true) or disable (false) the freezer.
++     *
++     * @hide
++     */
++    private static native void enableFreezerInternal(boolean enable);
++
+     /**
+      * Informs binder that a process is about to be frozen. If freezer is enabled on a process via
+      * this method, this method will synchronously dispatch all pending transactions to the
+@@ -1072,12 +1084,6 @@ public synchronized boolean enableFreezer(boolean enable) {
+      */
+     private static native int getBinderFreezeInfo(int pid);
+ 
+-    /**
+-     * Returns the path to be checked to verify whether the freezer is supported by this system.
+-     * @return absolute path to the file
+-     */
+-    private static native String getFreezerCheckPath();
+-
+     /**
+      * Check if task_profiles.json includes valid freezer profiles and actions
+      * @return false if there are invalid profiles or actions
+@@ -1092,19 +1098,15 @@ public static boolean isFreezerSupported() {
+         FileReader fr = null;
+ 
+         try {
+-            String path = getFreezerCheckPath();
+-            Slog.d(TAG_AM, "Checking cgroup freezer: " + path);
+-            fr = new FileReader(path);
+-            char state = (char) fr.read();
++            fr = new FileReader("/dev/freezer/frozen/freezer.killable");
++            int i = fr.read();
+ 
+-            if (state == '1' || state == '0') {
++            if ((char) i == '1') {
+                 // Also check freezer binder ioctl
+                 Slog.d(TAG_AM, "Checking binder freezer ioctl");
+                 getBinderFreezeInfo(Process.myPid());
+ 
+-                // Check if task_profiles.json contains invalid profiles
+-                Slog.d(TAG_AM, "Checking freezer profiles");
+-                supported = isFreezerProfileValid();
++                supported = true;
+             } else {
+                 Slog.e(TAG_AM, "Unexpected value in cgroup.freeze");
+             }
+diff --git a/services/core/jni/com_android_server_am_CachedAppOptimizer.cpp b/services/core/jni/com_android_server_am_CachedAppOptimizer.cpp
+index 7b084132ed1c3..a0d8607a1924f 100644
+--- a/services/core/jni/com_android_server_am_CachedAppOptimizer.cpp
++++ b/services/core/jni/com_android_server_am_CachedAppOptimizer.cpp
+@@ -526,6 +526,21 @@ static void com_android_server_am_CachedAppOptimizer_compactProcess(JNIEnv*, job
+     compactProcessOrFallback(pid, compactionFlags);
+ }
+ 
++static void com_android_server_am_CachedAppOptimizer_enableFreezerInternal(
++        JNIEnv *env, jobject clazz, jboolean enable) {
++    bool success = true;
++
++    if (enable) {
++        success = SetTaskProfiles(0, {"FreezerEnabled"}, true);
++    } else {
++        success = SetTaskProfiles(0, {"FreezerDisabled"}, true);
++    }
++
++    if (!success) {
++        jniThrowException(env, "java/lang/RuntimeException", "Unknown error");
++    }
++}
++
+ static jint com_android_server_am_CachedAppOptimizer_freezeBinder(JNIEnv* env, jobject clazz,
+                                                                   jint pid, jboolean freeze,
+                                                                   jint timeout_ms) {
+@@ -559,17 +574,6 @@ static jint com_android_server_am_CachedAppOptimizer_getBinderFreezeInfo(JNIEnv
+     return retVal;
+ }
+ 
+-static jstring com_android_server_am_CachedAppOptimizer_getFreezerCheckPath(JNIEnv* env,
+-                                                                            jobject clazz) {
+-    std::string path;
+-
+-    if (!getAttributePathForTask("FreezerState", getpid(), &path)) {
+-        path = "";
+-    }
+-
+-    return env->NewStringUTF(path.c_str());
+-}
+-
+ static jboolean com_android_server_am_CachedAppOptimizer_isFreezerProfileValid(JNIEnv* env) {
+     int uid = getuid();
+     int pid = getpid();
+@@ -591,11 +595,11 @@ static const JNINativeMethod sMethods[] = {
+          (void*)com_android_server_am_CachedAppOptimizer_getMemoryFreedCompaction},
+         {"compactSystem", "()V", (void*)com_android_server_am_CachedAppOptimizer_compactSystem},
+         {"compactProcess", "(II)V", (void*)com_android_server_am_CachedAppOptimizer_compactProcess},
++        {"enableFreezerInternal", "(Z)V",
++         (void*)com_android_server_am_CachedAppOptimizer_enableFreezerInternal},
+         {"freezeBinder", "(IZI)I", (void*)com_android_server_am_CachedAppOptimizer_freezeBinder},
+         {"getBinderFreezeInfo", "(I)I",
+          (void*)com_android_server_am_CachedAppOptimizer_getBinderFreezeInfo},
+-        {"getFreezerCheckPath", "()Ljava/lang/String;",
+-         (void*)com_android_server_am_CachedAppOptimizer_getFreezerCheckPath},
+         {"isFreezerProfileValid", "()Z",
+          (void*)com_android_server_am_CachedAppOptimizer_isFreezerProfileValid}};
+ 

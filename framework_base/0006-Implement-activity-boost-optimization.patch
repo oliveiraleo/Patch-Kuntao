@@ -1,9 +1,10 @@
-From 3bbbba6597b91b815af8286a9a9a0724a28b2faa Mon Sep 17 00:00:00 2001
+From 0d72dea3f5a547f91e70e49696c9b4687c5c643a Mon Sep 17 00:00:00 2001
 From: minaripenguin <minaripenguin@users.noreply.github.com>
 Date: Sun, 12 Nov 2023 08:15:47 +0800
 Subject: [PATCH] services: Implement activity boost optimization
 
 Signed-off-by: minaripenguin <minaripenguin@users.noreply.github.com>
+Signed-off-by: Pranav Vashi <neobuddy89@gmail.com>
 ---
  .../android/server/wm/ActivityClientController.java |  1 +
  .../java/com/android/server/wm/ActivityRecord.java  | 13 ++++++++++++-
@@ -11,10 +12,10 @@ Signed-off-by: minaripenguin <minaripenguin@users.noreply.github.com>
  3 files changed, 14 insertions(+), 1 deletion(-)
 
 diff --git a/services/core/java/com/android/server/wm/ActivityClientController.java b/services/core/java/com/android/server/wm/ActivityClientController.java
-index bd546b00dc72..2f44b8780863 100644
+index 949cbda8598cc..704a1574508cd 100644
 --- a/services/core/java/com/android/server/wm/ActivityClientController.java
 +++ b/services/core/java/com/android/server/wm/ActivityClientController.java
-@@ -489,6 +489,7 @@ public boolean finishActivity(IBinder token, int resultCode, Intent resultData,
+@@ -490,6 +490,7 @@ public boolean finishActivity(IBinder token, int resultCode, Intent resultData,
              final long origId = Binder.clearCallingIdentity();
              Trace.traceBegin(TRACE_TAG_WINDOW_MANAGER, "finishActivity");
              try {
@@ -23,10 +24,10 @@ index bd546b00dc72..2f44b8780863 100644
                  final boolean finishWithRootActivity =
                          finishTask == Activity.FINISH_TASK_WITH_ROOT_ACTIVITY;
 diff --git a/services/core/java/com/android/server/wm/ActivityRecord.java b/services/core/java/com/android/server/wm/ActivityRecord.java
-index 9e9faccba275..4f79e01620db 100644
+index c1935467889fa..b180789a25790 100644
 --- a/services/core/java/com/android/server/wm/ActivityRecord.java
 +++ b/services/core/java/com/android/server/wm/ActivityRecord.java
-@@ -302,6 +302,7 @@
+@@ -305,6 +305,7 @@
  import android.graphics.drawable.Drawable;
  import android.gui.DropInputMode;
  import android.hardware.HardwareBuffer;
@@ -34,7 +35,7 @@ index 9e9faccba275..4f79e01620db 100644
  import android.net.Uri;
  import android.os.Binder;
  import android.os.Build;
-@@ -310,6 +311,7 @@
+@@ -313,6 +314,7 @@
  import android.os.IBinder;
  import android.os.IRemoteCallback;
  import android.os.PersistableBundle;
@@ -42,29 +43,29 @@ index 9e9faccba275..4f79e01620db 100644
  import android.os.Process;
  import android.os.RemoteCallbackList;
  import android.os.RemoteException;
-@@ -6151,12 +6153,13 @@ boolean makeActiveIfNeeded(ActivityRecord activeActivity) {
+@@ -6169,12 +6171,13 @@ boolean makeActiveIfNeeded(ActivityRecord activeActivity) {
                  Slog.v(TAG_VISIBILITY, "Start visible activity, " + this);
              }
              setState(STARTED, "makeActiveIfNeeded");
 -
 +            setActivityBoost(true);
              try {
-                 mAtmService.getLifecycleManager().scheduleTransaction(app.getThread(), token,
-                         StartActivityItem.obtain(takeOptions()));
+                 mAtmService.getLifecycleManager().scheduleTransactionItem(app.getThread(),
+                         StartActivityItem.obtain(token, takeOptions()));
              } catch (Exception e) {
                  Slog.w(TAG, "Exception thrown sending start: " + intent.getComponent(), e);
 +                setActivityBoost(false);
              }
              // The activity may be waiting for stop, but that is no longer appropriate if we are
              // starting the activity again
-@@ -6806,8 +6809,16 @@ void onStartingWindowDrawn() {
+@@ -6810,8 +6813,16 @@ void onStartingWindowDrawn() {
          }
      }
  
 +    protected void setActivityBoost(boolean enable) {
-+        PowerManagerInternal mPowerManagerInternal = LocalServices.getService(PowerManagerInternal.class);
-+        if (mPowerManagerInternal != null) {
-+            mPowerManagerInternal.setPowerMode(Mode.LAUNCH, enable);
++        PowerManagerInternal powerManagerInternal = LocalServices.getService(PowerManagerInternal.class);
++        if (powerManagerInternal != null) {
++            powerManagerInternal.setPowerMode(Mode.LAUNCH, enable);
 +        }
 +    }
 +
@@ -75,10 +76,10 @@ index 9e9faccba275..4f79e01620db 100644
                  .getActivityMetricsLogger().notifyWindowsDrawn(this);
          final boolean validInfo = info != null;
 diff --git a/services/core/java/com/android/server/wm/ActivityStarter.java b/services/core/java/com/android/server/wm/ActivityStarter.java
-index 3c650e32beb9..9684ff011697 100644
+index 4b0177a36ebe2..d23ffe330dcc3 100644
 --- a/services/core/java/com/android/server/wm/ActivityStarter.java
 +++ b/services/core/java/com/android/server/wm/ActivityStarter.java
-@@ -3097,6 +3097,7 @@ private void deliverNewIntent(ActivityRecord activity, NeededUriGrants intentGra
+@@ -2868,6 +2868,7 @@ private void deliverNewIntent(ActivityRecord activity, NeededUriGrants intentGra
  
      /** Places {@link #mStartActivity} in {@code task} or an embedded {@link TaskFragment}. */
      private void addOrReparentStartingActivity(@NonNull Task task, String reason) {

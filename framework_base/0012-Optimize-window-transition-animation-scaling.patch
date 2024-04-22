@@ -1,19 +1,20 @@
-From 5a9ce9c4900042fcde7d2a6ae1970714235761e0 Mon Sep 17 00:00:00 2001
+From 6ad8d7876456b1aab0e8f7274d6e5796c74f9221 Mon Sep 17 00:00:00 2001
 From: minaripenguin <minaripenguin@users.noreply.github.com>
 Date: Fri, 14 Jul 2023 11:13:15 +0800
 Subject: [PATCH] wm: Optimize window/transition animation scaling
 
 Change-Id: I0e4f7c84e82ea133959dea6f4067351f24ef721b
 Signed-off-by: minaripenguin <minaripenguin@users.noreply.github.com>
+Signed-off-by: Pranav Vashi <neobuddy89@gmail.com>
 ---
  .../server/wm/WindowManagerService.java       | 22 +++++++++++++++++--
  1 file changed, 20 insertions(+), 2 deletions(-)
 
 diff --git a/services/core/java/com/android/server/wm/WindowManagerService.java b/services/core/java/com/android/server/wm/WindowManagerService.java
-index 2a2bb9b9807b..200dd29c3aaf 100644
+index 28f768c1ac71b..526e73f728ec7 100644
 --- a/services/core/java/com/android/server/wm/WindowManagerService.java
 +++ b/services/core/java/com/android/server/wm/WindowManagerService.java
-@@ -374,6 +374,8 @@ public class WindowManagerService extends IWindowManager.Stub
+@@ -380,6 +380,8 @@ public class WindowManagerService extends IWindowManager.Stub
      static final int LAYOUT_REPEAT_THRESHOLD = 4;
  
      static final boolean PROFILE_ORIENTATION = false;
@@ -22,7 +23,7 @@ index 2a2bb9b9807b..200dd29c3aaf 100644
  
      /** The maximum length we will accept for a loaded animation duration:
       * this is 10 seconds.
-@@ -3441,12 +3443,28 @@ private void setAnimatorDurationScale(float scale) {
+@@ -3490,12 +3492,28 @@ private void setAnimatorDurationScale(float scale) {
          ValueAnimator.setDurationScale(scale);
      }
  

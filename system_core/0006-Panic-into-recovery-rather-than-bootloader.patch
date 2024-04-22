@@ -1,21 +1,18 @@
-From dc0f5f58fc720c9e3125c40a280906ce7380e47e Mon Sep 17 00:00:00 2001
-From: Pierre-Hugues Husson <phh@phh.me>
-Date: Wed, 4 Sep 2019 21:11:48 +0200
-Subject: [PATCH] Panic into recovery rather than bootloader
+From 3826d3fa951d33f05cc34f9271f766f3e99ca1f7 Mon Sep 17 00:00:00 2001
+From: Astridxx <muratkozan350@gmail.com>
+Date: Sat, 6 Apr 2024 17:51:52 +0300
+Subject: [PATCH] init: reboot to recovery on panic by default to allow reading
+ pstore
 
-Getting last_kmsg/pstore from bootloader isn't possible for other people
-than the OEM, but we have TWRP to access last_kmsg/pstore
-
-Change-Id: If04bb6572dc66677d7b44f7d302b2d69ce526200
 ---
- init/reboot_utils.cpp | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ init/reboot_utils.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/init/reboot_utils.cpp b/init/reboot_utils.cpp
-index e6b868e797ae..1c8fed9653c7 100644
+index 547b1869f3c4..dd0fbbfe8177 100644
 --- a/init/reboot_utils.cpp
 +++ b/init/reboot_utils.cpp
-@@ -36,7 +36,7 @@
+@@ -37,7 +37,7 @@
  namespace android {
  namespace init {
  
@@ -24,12 +21,3 @@ index e6b868e797ae..1c8fed9653c7 100644
  static bool init_fatal_panic = false;
  
  // this needs to read the /proc/* files directly because it is called before
-@@ -73,7 +73,7 @@ void SetFatalRebootTarget(const std::optional<std::string>& reboot_target) {
-                 init_fatal_reboot_target = value;
-             }
-         });
--        // We already default to bootloader if no setting is provided.
-+        // We already default to recovery if no setting is provided.
-     } else {
-         const std::string kRebootTargetStringPattern = kRebootTargetString + "=";
-         start_pos += sizeof(kRebootTargetStringPattern) - 1;

@@ -1,4 +1,4 @@
-From a402631dc9b577a142f1ced7de833afe8a22e1d5 Mon Sep 17 00:00:00 2001
+From d97734c586e3e7b8f89709840a67e465691aaa4e Mon Sep 17 00:00:00 2001
 From: minaripenguin <minaripenguin@users.noreply.github.com>
 Date: Fri, 16 Dec 2022 13:35:42 +0800
 Subject: [PATCH] BootReceiver: Return early if trace_pipe doesn't exists
@@ -31,10 +31,10 @@ Signed-off-by: Dmitrii <bankersenator@gmail.com>
  1 file changed, 6 insertions(+)
 
 diff --git a/services/core/java/com/android/server/BootReceiver.java b/services/core/java/com/android/server/BootReceiver.java
-index 572e9c2a5d82..065e398ad05d 100644
+index 9f279b1ba3fe7..9a2b9c67b9b6d 100644
 --- a/services/core/java/com/android/server/BootReceiver.java
 +++ b/services/core/java/com/android/server/BootReceiver.java
-@@ -139,6 +139,11 @@ public class BootReceiver extends BroadcastReceiver {
+@@ -140,6 +140,11 @@ public class BootReceiver extends BroadcastReceiver {
      private static final int MAX_ERROR_REPORTS = 8;
      private static int sSentReports = 0;
  
@@ -46,7 +46,7 @@ index 572e9c2a5d82..065e398ad05d 100644
      @Override
      public void onReceive(final Context context, Intent intent) {
          // Log boot events in the background to avoid blocking the main thread with I/O
-@@ -161,6 +166,7 @@ public void run() {
+@@ -162,6 +167,7 @@ public void run() {
  
          FileDescriptor tracefd = null;
          try {
