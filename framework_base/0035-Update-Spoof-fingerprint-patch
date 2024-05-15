@@ -1,6 +1,7 @@
-From cb92d66e186f843777398b62b6f68fb5f117f278 Mon Sep 17 00:00:00 2001
+
+From 77bff9fd4463d4c64925b44a4fc2e1bc00ebdcce Mon Sep 17 00:00:00 2001
 From: Murat Kozan <muratkozan350@gmail.com>
-Date: Fri, 8 Mar 2024 23:10:59 +0300
+Date: Wed, 15 May 2024 22:47:59 +0300
 Subject: [PATCH] Update Spoof fingerprint
 
 ---
@@ -8,7 +9,7 @@ Subject: [PATCH] Update Spoof fingerprint
  1 file changed, 8 insertions(+), 9 deletions(-)
 
 diff --git a/core/java/com/android/internal/gmscompat/AttestationHooks.java b/core/java/com/android/internal/gmscompat/AttestationHooks.java
-index afb9697a25a4..db419ba79a1e 100644
+index afb9697a25a45..a3b4b456a7ef3 100644
 --- a/core/java/com/android/internal/gmscompat/AttestationHooks.java
 +++ b/core/java/com/android/internal/gmscompat/AttestationHooks.java
 @@ -86,15 +86,14 @@ private static void setVersionFieldString(String key, String value) {
@@ -26,12 +27,12 @@ index afb9697a25a4..db419ba79a1e 100644
 -        setVersionFieldString("SECURITY_PATCH", "2016-07-05");
 +        setBuildField("BRAND", "motorola");
 +        setBuildField("MANUFACTURER", "motorola");
-+        setBuildField("DEVICE", "griffin");
-+        setBuildField("ID", "MCC24.246-37");
-+        setBuildField("FINGERPRINT", "motorola/griffin_retcn/griffin:6.0.1/MCC24.246-37/42:user/release-keys");
-+        setBuildField("PRODUCT", "griffin_retcn");
-+        setBuildField("MODEL", "XT1650-05");
-+        setVersionFieldString("SECURITY_PATCH", "2016-07-01");
++        setBuildField("DEVICE", "clark");
++        setBuildField("ID", "MPHS24.49-18-8");
++        setBuildField("FINGERPRINT", "motorola/clark_retus/clark:6.0/MPHS24.49-18-8/4:user/release-keys");
++        setBuildField("PRODUCT", "clark_retus");
++        setBuildField("MODEL", "XT1575");
++        setVersionFieldString("SECURITY_PATCH", "2016-09-01");
      }
  
      public static void initApplicationBeforeOnCreate(Application app) {
