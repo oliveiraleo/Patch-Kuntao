@@ -1,4 +1,4 @@
-From 12291742a1f111ea70f36b22a57e2df840731f12 Mon Sep 17 00:00:00 2001
+From b88ab584b725e5284286c9800301efe225305bf3 Mon Sep 17 00:00:00 2001
 From: z3DD3r <z3dd3r@gmail.com>
 Date: Tue, 16 Apr 2024 12:36:46 +0300
 Subject: [PATCH] [UL] dnsresolver: Support no-bpf usecase
