@@ -1,22 +1,20 @@
-
-From 77bff9fd4463d4c64925b44a4fc2e1bc00ebdcce Mon Sep 17 00:00:00 2001
+From e4c1f3dd78a1399d16008781ab5af11a7df391ac Mon Sep 17 00:00:00 2001
 From: Murat Kozan <muratkozan350@gmail.com>
-Date: Wed, 15 May 2024 22:47:59 +0300
+Date: Mon, 17 Jun 2024 08:21:54 +0300
 Subject: [PATCH] Update Spoof fingerprint
 
 ---
- .../internal/gmscompat/AttestationHooks.java    | 17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+ .../internal/gmscompat/AttestationHooks.java     | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
 diff --git a/core/java/com/android/internal/gmscompat/AttestationHooks.java b/core/java/com/android/internal/gmscompat/AttestationHooks.java
-index afb9697a25a45..a3b4b456a7ef3 100644
+index afb9697a25a45..9d3f084f5a95d 100644
 --- a/core/java/com/android/internal/gmscompat/AttestationHooks.java
 +++ b/core/java/com/android/internal/gmscompat/AttestationHooks.java
-@@ -86,15 +86,14 @@ private static void setVersionFieldString(String key, String value) {
- 
+@@ -87,14 +87,14 @@ private static void setVersionFieldString(String key, String value) {
      private static void spoofBuildGms() {
          // Alter model name and fingerprint to avoid hardware attestation enforcement
--        setBuildField("BRAND", "google");
+         setBuildField("BRAND", "google");
 -        setBuildField("MANUFACTURER", "Huawei");
 -        setBuildField("DEVICE", "angler");
 -        setBuildField("ID", "NPD90G");
@@ -25,14 +23,14 @@ index afb9697a25a45..a3b4b456a7ef3 100644
 -        setBuildField("MODEL", "Nexus 6P");
 -        setVersionField("DEVICE_INITIAL_SDK_INT", Build.VERSION_CODES.N);
 -        setVersionFieldString("SECURITY_PATCH", "2016-07-05");
-+        setBuildField("BRAND", "motorola");
-+        setBuildField("MANUFACTURER", "motorola");
-+        setBuildField("DEVICE", "clark");
-+        setBuildField("ID", "MPHS24.49-18-8");
-+        setBuildField("FINGERPRINT", "motorola/clark_retus/clark:6.0/MPHS24.49-18-8/4:user/release-keys");
-+        setBuildField("PRODUCT", "clark_retus");
-+        setBuildField("MODEL", "XT1575");
-+        setVersionFieldString("SECURITY_PATCH", "2016-09-01");
++        setBuildField("MANUFACTURER", "Google");
++        setBuildField("DEVICE", "sailfish");
++        setBuildField("ID", "OPM1.171019.011");
++        setBuildField("FINGERPRINT", "google/sailfish/sailfish:8.1.0/OPM1.171019.011/4448085:user/release-keys");
++        setBuildField("PRODUCT", "sailfish");
++        setBuildField("MODEL", "Pixel");
++        setVersionField("DEVICE_INITIAL_SDK_INT", Build.VERSION_CODES.N_MR1);
++        setVersionFieldString("SECURITY_PATCH", "2017-12-05");
      }
  
      public static void initApplicationBeforeOnCreate(Application app) {
