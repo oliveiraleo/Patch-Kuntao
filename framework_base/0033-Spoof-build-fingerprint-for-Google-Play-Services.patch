@@ -137,7 +137,7 @@ index 0000000000000..afb9697a25a45
 +        setBuildField("MANUFACTURER", "Google");
 +        setBuildField("DEVICE", "oriole");
 +        setBuildField("ID", "BP21.241121.009");
-+        setBuildField("FINGERPRINT", "google/oriole_beta/oriole:Baklava/BP21.241121.009/12787338:user/release-keys");
++        setBuildField("FINGERPRINT", "google/oriole_beta/oriole:15/BP11.241121.013/12873528:user/release-keys");
 +        setBuildField("PRODUCT", "oriole_beta");
 +        setBuildField("MODEL", "Pixel 6");
 +        setVersionField("DEVICE_INITIAL_SDK_INT", Build.VERSION_CODES.N);
